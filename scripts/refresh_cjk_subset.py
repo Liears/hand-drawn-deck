@@ -105,6 +105,15 @@ def content_hash(p: Path) -> str:
     return hashlib.sha1(p.read_bytes()).hexdigest()[:8]
 
 
+def verify_coverage(subset_path: Path, chars: str, family: str) -> list[str]:
+    """子集后自检：重开输出字体读 cmap，断言每个用到的字符都在。
+    缺失 = 源字体本身没有该字形（如 Xiaolai 缺某些符号），浏览器必然回落——
+    必须列出让人决策（换写法/接受回落/换字体），不允许静默带病交付。"""
+    from fontTools.ttLib import TTFont
+    cmap = TTFont(str(subset_path)).getBestCmap() or {}
+    return [c for c in chars if ord(c) not in cmap]
+
+
 def main() -> None:
     chars = collect_chars()
     n_cjk = sum(1 for c in chars if 0x4E00 <= ord(c) <= 0x9FFF)
@@ -117,6 +126,18 @@ def main() -> None:
 
     write_fonts_css(content_hash(FONTS / "Xiaolai-subset.woff2"),
                     content_hash(FONTS / "JetBrainsMono-subset.woff2"))
+
+    # 字形覆盖自检（2026-09-15 坑：改文案后忘跑脚本/字体本身缺字 → 回落黑体且无人发现）
+    miss_x = verify_coverage(FONTS / "Xiaolai-subset.woff2", chars, "Xiaolai")
+    miss_j = verify_coverage(FONTS / "JetBrainsMono-subset.woff2", jbm_chars, "JetBrains Mono")
+    if not miss_x and not miss_j:
+        print(f"[verify] 字形覆盖 ✓ 全部 {len(chars)} 字符在子集内")
+    else:
+        if miss_x:
+            print(f"[verify] ✗ Xiaolai 缺 {len(miss_x)} 个字形（源字体没有，浏览器必然回落）：{''.join(miss_x)}")
+        if miss_j:
+            print(f"[verify] ✗ JetBrains Mono 缺字形：{''.join(miss_j)}")
+        print("[verify] 处理：换写法（如 ①→1.）/ 接受回落 / 换字体，不要静默带病交付")
     print("[subset] 完成。index.html 的 <link ...fonts.css?v=XXX> 需与 fonts.css 内 ?v= 保持一致（两处）")
 
 
