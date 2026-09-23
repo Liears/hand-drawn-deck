@@ -18,6 +18,8 @@ git clone https://github.com/Liears/hand-drawn-deck.git ~/.claude/skills/hand-dr
 |---|---|
 | `SKILL.md` | 完整规范：工作流（结构草案先行）、四级卡片体系、字号 token、fit 缩放、滚入动画、代码窗、数字诚实性、自检清单、坑清单 |
 | `scripts/refresh_cjk_subset.py` | CJK 子集刷新：扫描 HTML 实际用字 → Xiaolai 子集化（全量 22MB → <100KB）→ 生成 fonts.css + `?v=` 双处自动同步 |
+| `scripts/verify-deck.mjs` | 字符级探针：缺字/溢出/字号下限/页码连续/资源加载/每页高度；playwright 按 CWD 解析、chromium 二进制自动兜底 |
+| `scripts/shot-deck.mjs` | 布局级目检：逐页 element 截图（自动点亮滚入动画），配合读图工具查"文字撕列"这类探针查不出的问题 |
 
 ## 设计要点
 
