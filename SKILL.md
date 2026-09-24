@@ -32,7 +32,9 @@ description: 制作手绘（Excalidraw 风格）中文技术 HTML deck/汇报页
 - **数字诚实性**：同一数字全 deck 一致（改一处 grep 全同步）；理论/实测不跨口径相减；每个 readout 旁标口径（n、trial 数、来源）；数据来自真实日志不得编造。诚实结论优先于好看结论。**过时可见**：deck 是活文档——被审计/待复核/已部分推翻的数字必须带状态标注（如"审计复核中"），禁止让读者把污染数字当定论。
 - **类名即风格契约**：改内容/加页**禁止发明新 CSS 类**，用既有类（card/subcard/inset/anno/t-label/t-readout/t-stat/badge/codewin）+ grid/flex 拼装。新组件（如汇总总账表）也这么拼——0 新 CSS，风格一致性自动保持，且免去样式对撞调试。
 - **表格格子先包一层 div**：dtable 非表头格子的内容一律先包一层普通 `<div>` 再放行内元素——格子本身是 flex 容器，不包则每个行内元素（`<a>`/`<span>`/`<br>`/`<b>`）被当独立 flex item 横排，正文撕成乱列（详见已知坑）。
-- **单页高度基线**：设计宽 1920 下正常页约 810–1150px；单页 > ~1400px 通常是一页讲了两件事，先试拆页再调文案（verify 脚本输出每页高度，直接对照）。
+- **密表重排（ledger/索引页）**：一页内容是「N 层 × 属性」的账目（差异账、失败解剖、能力清单）时，**不要用 `.dtable` 的 1fr 段落列**——段落里混行内链接/`<br>`/`<span>` 时行高撕裂、链接浮空，就是"文字布局很乱"的来源。改成 grid2/grid3 的 subcard 均质卡阵，每卡固定四槽：① 头部徽标行（`badge solid` 序号 + `t-h3` 标题 + 右侧状态徽标 `margin-left:auto`）② 正文短句（≤4 行，行内不放链接）③ 票号链接行（`t-micro`，链接只在这行出现）④ 影响面/处置行。票号→PR 的全量对应放索引页，账目页只列票号。
+- **卡阵沉底对齐**：grid 拉伸会让矮卡底部留白显乱。每卡加行内 `display:flex; flex-direction:column`，第③④槽容器改 `margin-top:auto; padding-top:12px`——所有卡的链接行/处置行对齐到同一条底线，行高差被吸收成中部留白而不是底部破洞。
+- **单页高度基线**：设计宽 1920 下正常页约 810–1150px；单页 > ~1400px 通常是一页讲了两件事，先试拆页再调文案（verify 脚本输出每页高度，直接对照）。 例外：均质卡阵的账目/索引页（六卡 grid3 的 ledger 页实测 1400–1500px）仍是一件事，此时看截图平衡（卡高齐、底线齐）而不是绝对高度；要压高度先砍顶部账目/anno/名词三块开销，再砍卡正文，最后砍链接行。
 - **叙事纪律**（用户明确反馈过的红线）：不造时间线——除非内容本身真是时序；不用比喻链条（"机制→尺子"式造词比喻禁止）；平铺直叙说事实与结论。结构跟着内容走，不为观感虚构结构。
 - 对比图（如 A/B 双条）：线型+色相双重区分（基线=斜纹/虚感 + 异色，主项=实色）。
 
@@ -80,6 +82,8 @@ node <skill>/scripts/shot-deck.mjs http://<host>/<deck>/index.html 5,9 /tmp
 - 系统字体黑体混排 = 子集缺字，重跑脚本即可（脚本现已带覆盖自检，缺字会点名）；改字体/css 后 `?v=` 必须两处同步（脚本已自动化）。
 - playwright 浏览器版本错配：repo 依赖要的 build（如 chromium_headless_shell-1217）缓存里没有时 launch 直接报错——扫 `/root/.cache/ms-playwright/` 下现存二进制，`executablePath` 指过去（本机是 chromium-1243 arm64）。
 - **dtable 格子是 flex 容器，行内元素会被撕碎**：`.dtable > div { display:flex; align-items:center }` 下，格内每个行内元素（`<a>`/`<span>`/`<br>`/`<b>`）都是独立 flex item 横排——正文撕成乱列、链接浮在半空、长串不换行。探针全绿也查不出，只能截图发现。纪律：dtable 每个非表头格子的内容先包一层普通 `<div>`（单个 flex item，行内流恢复；垂直居中与行分隔线不变）。
+- **readout 下的 micro 行会甩孤儿字**：430px 宽的读数卡里"非 merge 提交 50 个 · 涉及文件 105 个"会折成两行、第二行只剩一个"个"。数字+单位用 `&nbsp;` 焊死只是必要条件；充分条件是每行 ≤18 个汉字，超了就主动 `<br>` 分行，别让它自己折。
+- **活 deck 回写数字会漏页**：同一数字/状态常散在多页（提示词字节数在账目页与缺口页各一份；"待做/待部署"散在下一步页与索引页）。回写前先 grep 全 deck 的字面量与状态词一次改全；索引页的新 PR 行与正文页同一次提交，否则索引立刻过期。
 - **去边框规则按列数写死**：`.dtable > div:nth-last-child(-n+3)` 假设三列；两列表的倒数第二行右格会丢行分隔线（左有线右无线）。两列表给倒数第二行右格补行内 `border-bottom`（值同 `.dtable > div`：`1.4px solid rgba(43,36,24,.35)`）。
 - **截图前必须点亮滚入动画**：`.rv` 默认 `opacity:0`，直接截是空页；先给所有 `.slide` 加 `.on` 再截（shot-deck.mjs 已内置）。
 - **playwright 在外部目录 import 不到**：脚本放 /tmp 或 skill 目录时依赖按脚本所在目录解析；用 `createRequire(path.join(process.cwd(),'noop.js'))` 按 CWD 解析，CJS 包 default import 再解构（`const { chromium } = require('playwright')`）。
@@ -97,6 +101,9 @@ node <skill>/scripts/shot-deck.mjs http://<host>/<deck>/index.html 5,9 /tmp
 - [ ] 新中文跑过子集刷新（脚本自检 0 缺字）、`?v=` 两处一致
 - [ ] 程序化探针通过：missing=[]、overflow=0、字体家族齐全、pagenosOk=true
 - [ ] dtable 非表头格子内容均已包一层 div（行内元素不被 flex 撕碎）
+- [ ] 账目/索引页用均质卡阵而非 dtable 段落列；链接只出现在票号行
+- [ ] 卡阵各卡的链接/处置行沉底对齐（flex 列 + margin-top:auto）
+- [ ] 回写数字时全 deck grep 过同字面量与状态词（待做/待部署/待立项），索引页同批更新
 - [ ] 逐页截图目检过布局（探针覆盖不了文字撕列/链接浮空/层次倒挂）
 - [ ] 无新发明 CSS 类（内容全用既有类拼装）；无虚构时间线/比喻
 - [ ] `prefers-reduced-motion` 兜底存在
