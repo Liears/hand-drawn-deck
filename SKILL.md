@@ -1,110 +1,286 @@
 ---
 name: hand-drawn-deck
-description: 制作手绘（Excalidraw 风格）中文技术 HTML deck/汇报页——单文件、零 CDN、可滚动。当用户要"手绘风 HTML""Excalidraw 风格汇报/deck""羊皮纸手绘分享页"或要求把某份报告做成手绘 deck 时使用。含字体子集管线、四级卡片体系、fit 缩放、滚入动画与数字诚实性纪律。
+description: 把技术内容做成手绘风（Excalidraw 风、羊皮纸底）的中文汇报网页——单文件 HTML、零 CDN、纵向滚动，自带字体子集脚本和两级验证脚本。只要用户想要手绘风 / Excalidraw 风格的 deck、汇报页、分享页、slides，或要把一份报告、审计、实验结果做成能滚动阅读、能直接转发的网页，就用它；用户没说"手绘"，只说"做成一页网页汇报""弄个分享页"也算。需要 .pptx 文件或现场翻页演示时不要用。
 ---
 
-# Hand-drawn Deck（Excalidraw 风中文技术汇报页）
+# Hand-drawn Deck
 
-产出：**单文件、零依赖、可滚动**的手绘风 HTML 分享页（deck = 若干 .slide 纵向堆叠，非翻页）。
+把一份技术内容做成**给读者自己读、随手能转发的手绘风网页**：一个 `index.html` 加一个 `fonts/` 目录，零 CDN 依赖，纵向滚动、不翻页。
 
-## 工作流（必须按序，不可一口气写完）
+它为"读和分享"而生，不是现场讲的幻灯片：读者身边没有讲解的人。所以每一页都要自足——结论写进标题，口径写在数字旁边，尾页写明要读者决定什么。后面所有的密度和版式规则都从这条前提推出来。
 
-1. **先给结构草案**：每页（标题 + 核心点一句话 + 版式），用户确认后再填内容。禁止跳过确认直接写全文。
-2. 每页只讲一件事，装不下就拆页。字号一律走 `--fs-*` token。
-3. **每加新中文必须重跑子集刷新脚本**（见下）。脚本自带**字形覆盖自检**：跑完自动断言 HTML 里每个字符都在子集 cmap 内；字体本身缺的字形会点名列出（浏览器必然回落），须人工决策换写法/接受/换字体，不许静默带病交付。
-4. 交付前跑**两级验证**：程序化探针（字符级）+ 逐页截图目检（布局级），见"验证"段；再列出需浏览器抽查的点。
+## 文件地图
 
-## 风格规范（不可违）
+| 文件 | 什么时候用 |
+|---|---|
+| `assets/template.html` | 起手时拷它。八个页型各占一页，是"类名契约"的参考实现；写页时照着对应的那一页拷。 |
+| `scripts/refresh_cjk_subset.py` | 每次改完 HTML 文案后跑。 |
+| `scripts/verify-deck.mjs` | 交付前跑。字符级探针，退出码可用。 |
+| `scripts/shot-deck.mjs` | 交付前跑。逐页截图，供目检。 |
+| `references/pitfalls.md` | 环境搭不起来、探针红了、截图花了的时候查：按症状索引的故障手册。 |
 
-- 墨线 `--ink:#2b2418`；羊皮纸底 `--paper:#f4ecd8`，**不做旧**（仅两层极淡 radial 纸纹）。
-- **卡片四级分级**，禁用裸 `--paper` 填卡片，硬度随层级递增不倒挂：
-  1. `.card` 主框：2px ink 边 + hachure 斜线纹理（`repeating-linear-gradient(45deg,transparent 0 7px,rgba(43,36,24,.09) 7px 8.5px)` 叠 paper-2）+ 偏移实色阴影 `4px 4px 0`
-  2. `.subcard` 子卡：1.5px ink、paper-2、`3px 3px 0` 阴影
-  3. `.inset`：1.4px 半透明边、paper-3、无阴影
-  4. `.anno` 注解：border-left 5px 强调色条 + 柔色底
-- **A vs B 对比**：主推项 hachure 纹理卡，对照项 paper-2 素色卡。
-- 圆角不规整：`8px 12px 9px 11px/11px 8px 12px 9px`（子卡另设一组）；阴影一律实色偏移，**不用模糊**。
-- 字体三件（全自托管，见字体管线）：拉丁 **Excalifont**、中文 **Xiaolai**（禁 LongCang/Ma Shan Zheng）、代码 **JetBrains Mono**。
-- **字号 floor 20px**（唯一例外：代码窗 mono 19px）。scale：stat 80 / readout 64 / title 56 / body 28 / h3 26 / mono-md 22 / label 20 / micro 20。
-- 大字（>100px 无、80px 有）line-height ≥1.1；短标签 `nowrap`、专有名词用 `&nbsp;` 焊死（如 `GLM-5.3-Flash`、`2/4 → 3/4`）、正文 `word-break:keep-all`。
-- **可滚动单页非翻页**：设计宽 1920px + `fit()` 按视口宽缩放（上限 1.3×，`stage.style.height = deck.getBoundingClientRect().height`）；`.slide` 普通流堆叠（禁 absolute/opacity:0 藏页）；滚入动画用 IntersectionObserver（threshold 0.12，进入即 unobserve）；`prefers-reduced-motion` 兜底直接显示。
-- 代码用 VSCode Dark+ 手写窗（避免高亮库）：底 `#1e1e1e` + mac 三圆点；token 只标 cm `#6a9955` / kw `#569cd6` / st `#ce9178` / fn `#dcdcaa` / cls `#4ec9b0` / num `#b5cea8`；`< > { }` 转义；每窗 ≤22 行。
-- **数字诚实性**：同一数字全 deck 一致（改一处 grep 全同步）；理论/实测不跨口径相减；每个 readout 旁标口径（n、trial 数、来源）；数据来自真实日志不得编造。诚实结论优先于好看结论。**过时可见**：deck 是活文档——被审计/待复核/已部分推翻的数字必须带状态标注（如"审计复核中"），禁止让读者把污染数字当定论。
-- **类名即风格契约**：改内容/加页**禁止发明新 CSS 类**，用既有类（card/subcard/inset/anno/t-label/t-readout/t-stat/badge/codewin）+ grid/flex 拼装。新组件（如汇总总账表）也这么拼——0 新 CSS，风格一致性自动保持，且免去样式对撞调试。
-- **表格格子先包一层 div**：dtable 非表头格子的内容一律先包一层普通 `<div>` 再放行内元素——格子本身是 flex 容器，不包则每个行内元素（`<a>`/`<span>`/`<br>`/`<b>`）被当独立 flex item 横排，正文撕成乱列（详见已知坑）。
-- **密表重排（ledger/索引页）**：一页内容是「N 层 × 属性」的账目（差异账、失败解剖、能力清单）时，**不要用 `.dtable` 的 1fr 段落列**——段落里混行内链接/`<br>`/`<span>` 时行高撕裂、链接浮空，就是"文字布局很乱"的来源。改成 grid2/grid3 的 subcard 均质卡阵，每卡固定四槽：① 头部徽标行（`badge solid` 序号 + `t-h3` 标题 + 右侧状态徽标 `margin-left:auto`）② 正文短句（≤4 行，行内不放链接）③ 票号链接行（`t-micro`，链接只在这行出现）④ 影响面/处置行。票号→PR 的全量对应放索引页，账目页只列票号。
-- **卡阵沉底对齐**：grid 拉伸会让矮卡底部留白显乱。每卡加行内 `display:flex; flex-direction:column`，第③④槽容器改 `margin-top:auto; padding-top:12px`——所有卡的链接行/处置行对齐到同一条底线，行高差被吸收成中部留白而不是底部破洞。
-- **单页高度基线**：设计宽 1920 下正常页约 810–1150px；单页 > ~1400px 通常是一页讲了两件事，先试拆页再调文案（verify 脚本输出每页高度，直接对照）。 例外：均质卡阵的账目/索引页（六卡 grid3 的 ledger 页实测 1400–1500px）仍是一件事，此时看截图平衡（卡高齐、底线齐）而不是绝对高度；要压高度先砍顶部账目/anno/名词三块开销，再砍卡正文，最后砍链接行。
-- **叙事纪律**（用户明确反馈过的红线）：不造时间线——除非内容本身真是时序；不用比喻链条（"机制→尺子"式造词比喻禁止）；平铺直叙说事实与结论。结构跟着内容走，不为观感虚构结构。
-- 对比图（如 A/B 双条）：线型+色相双重区分（基线=斜纹/虚感 + 异色，主项=实色）。
+## 工作流
 
-## 字体管线（首次在某项目用时搭一次）
+这是从零做一份 deck 的路线。用户给的是一份现成的 deck 加一批改动时，改走[更新已有 deck](#更新已有-deck)。下文用 `$SKILL_DIR` 指本 skill 的目录，`$DECK` 指 deck 目录。第 1 步的确认是硬检查点，其余步骤可以连续做。
+
+### 0. 环境（每个项目搭一次）
+
+- Python 3 加 `fonttools`、`brotli`：`pip3 install fonttools brotli`（中国大陆加 `-i https://mirrors.aliyun.com/pypi/simple/`）。
+- Node 加 playwright，探针和截图要用。两个 `.mjs` 脚本按**当前目录**解析 playwright，所以先建一个目录装好，之后都在那里跑：
+
+  ```bash
+  npm init -y && npm i playwright && npx playwright install chromium
+  ```
+
+  本机已有 Chrome 或 Edge 时可以不下载浏览器，跑脚本前把 `CHROME_EXE` 设成它的可执行文件路径。
+- 三套源字体（四个文件，Excalifont 分两个子集），见[字体管线](#字体管线)。
+
+### 1. 结构草案 → 等用户确认
+
+先给用户一张表，每页一行：**标题（写成结论句）+ 核心点一句话 + 版式**，确认之后再写正文。整份写完再改结构等于所有页重排一遍，所以在这里停一下是划算的。
+
+| # | 标题（结论句） | 核心点 | 版式 |
+|---|---|---|---|
+| 1 | 重试层上线后，接口失败率从 3.1% 降到 0.4% | 三个大数字定调 | 结论首屏 |
+| 6 | 审计发现的六个问题，各自落在哪一层 | 一个问题一张卡 | 账目卡阵 |
+| 8 | 还需要拍板两件事，其余已排期 | 读者要做的决定 | 尾页 |
+
+草案阶段顺带问清三件事，它们决定后面好不好写：数据从哪来、口径是什么；哪些数字还在复核；读者是谁、已经知道多少背景。
+
+用户明确说了"不用看草案、直接做完"，就不停，但要把这张草案表放进最后的交付摘要，并注明这一步本该先确认。
+
+### 2. 起手
+
+- 同系列已有旧 deck：拷它的 `<style>` 和 `<script>`。那份 CSS 才是真正的类名契约，模板只是没有可拷对象时的参考实现。
+- 没有：`cp "$SKILL_DIR/assets/template.html" "$DECK/index.html"`，用真实内容替换八页示例。**示例里的数字全是编的，一个都不能留**；填完删掉 `<meta name="deck-template">`（留着的话探针会提醒示例未清理）。
+- 预览：浏览器直接打开文件即可。两个验证脚本接受本地路径，也接受 `http://` 地址。
+
+### 3. 逐页拼装
+
+每一页从模板里找最接近的页型，拷过来换内容。版式跟着内容走，相邻两页尽量不连用同一个版式：
+
+| 页型 | 模板第几页 | 什么时候用 |
+|---|---|---|
+| 结论首屏 | 1 | 第一页。标题是全篇结论，几个大数字定调。 |
+| 读数行 | 2 | 一组并列的指标（2–4 个），每个旁边标各自的口径。 |
+| A/B 对比 | 3 | 两个方案、上线前后、任何有对照的两个数。 |
+| 代码窗 | 4 | 改动本身值得看的时候，旁边配一句"看哪里"。来源材料里没有代码就不要编，整页不要。 |
+| 简表 | 5 | 每格都是短语的三四列小表。 |
+| 账目卡阵 | 6 | N 层 × 属性的账目：差异账、失败解剖、能力清单。 |
+| 单点展开 | 7 | 把一个问题单独讲透：左边讲发生了什么、为什么，右边一张表放范围、修法、工作量。 |
+| 尾页 | 8 | 要拍板的事和下一步。 |
+
+拼装时守住两条：只用模板 `<style>` 里已有的类（见[类名契约](#类名契约)），内容守[内容纪律](#内容纪律)。
+
+### 4. 字体子集刷新
+
+**每改一处文案就重跑**，不只是加了中文才跑：
 
 ```bash
-pip3 install fonttools brotli -i https://mirrors.aliyun.com/pypi/simple/
-mkdir -p <deck目录>/{fonts,scripts} && cp ~/.claude/skills/hand-drawn-deck/scripts/refresh_cjk_subset.py <deck目录>/scripts/
-cd <deck目录>/fonts
-# Excalifont（官方 npm 包的 latin 子集，总 ~27KB）：
-mkdir /tmp/excali-pkg && cd /tmp/excali-pkg && npm pack @excalidraw/excalidraw@0.18.0
-tar xzf excalidraw-*.tgz
-cp package/dist/prod/fonts/Excalifont/Excalifont-Regular-a88b72a24fb54c9f94e3b5fdaa7481c9.woff2 <deck>/fonts/Excalifont-latin.woff2
-cp package/dist/prod/fonts/Excalifont/Excalifont-Regular-3f2c5db56cc93c5a6873b1361d730c16.woff2 <deck>/fonts/Excalifont-latin-ext.woff2
-# Xiaolai 全量 TTF（22MB，子集后 <100KB）：
-curl -sL -o <deck>/fonts/Xiaolai.ttf "https://gh-proxy.com/https://github.com/Auriand20031203/xiaolai-font/raw/main/Xiaolai-Regular.ttf"
-# JetBrains Mono：
-curl -sL -o <deck>/fonts/JetBrainsMono-Regular.ttf "https://gh-proxy.com/https://github.com/JetBrains/JetBrainsMono/raw/master/fonts/ttf/JetBrainsMono-Regular.ttf"
-# 每次改完 HTML 中文：
-cd <deck目录> && python3 scripts/refresh_cjk_subset.py
+python3 "$SKILL_DIR/scripts/refresh_cjk_subset.py" "$DECK"    # Windows 上命令通常是 python
 ```
 
-脚本自动：扫 HTML 收集用到的 CJK → 子集化 Xiaolai（含全角标点/常用符号白名单）→ 生成 `fonts/fonts.css`（@font-face + 内容哈希 `?v=`）→ **自动同步 index.html 里 `<link>` 的 `?v=`**（两处一致由脚本保证）。
+直接跑 skill 里的这一份，不要拷进 deck——两份拷贝迟早不一致。旧 deck 里如果已经有一份拷贝，也以 skill 里的为准。
 
-## 程序化验证（交付前必跑）
+脚本收集 HTML 里用到的全部非 ASCII 字符（另带一份全角标点和常用符号的白名单），子集化 Xiaolai，生成 `fonts/fonts.css`，并把 `index.html` 里 `<link>` 的 `?v=` 同步成 fonts.css 的内容哈希。跑完看 `[verify]` 那一行自检：
 
-**两级验证，缺一不可**：探针查**字符级**（缺字/溢出/字号下限/页码连续/资源加载失败），截图查**布局级**（文字被撕成乱列、链接浮空、层次倒挂）——布局问题探针全绿也查不出，只能看图。截图落本地文件后自己看（view_image 等读图工具），不把验收押在"截图被环境转存成外链后我能看见"上。
+- `[verify] 字形覆盖 ✓`：收进来的字符都在子集里。
+- `[verify] ✗ … 缺 N 个字形`：源字体本身没有这些字（emoji、生僻符号），浏览器必然回落。逐个决定：换写法、换字体，或人工接受回落——把字符写进 `<meta name="fallback-ok" content="…">`，探针会放行并列出。不要放着不管。
+
+脚本每次都会回写 `index.html` 里的 `?v=`，用编辑工具接着改之前先重新读一遍文件。
+
+### 5. 两级验证
+
+两级查的是不同层面的问题，缺一不可：
 
 ```bash
-# 探针：从含 playwright 依赖的项目根跑；第二参数 = 本轮新文案里挑的探针字
-node <skill>/scripts/verify-deck.mjs http://<host>/<deck>/index.html '总账归因复核锚冻结'
-# 逐页 element 截图（1-based 页码逗号分隔；脚本自动点亮滚入动画再截）
-node <skill>/scripts/shot-deck.mjs http://<host>/<deck>/index.html 5,9 /tmp
+cd <装了 playwright 的目录>
+node "$SKILL_DIR/scripts/verify-deck.mjs" "$DECK/index.html"      # 字符级
+node "$SKILL_DIR/scripts/shot-deck.mjs" "$DECK/index.html" all     # 布局级
 ```
 
-探针断言（脚本内置并打印验收行）：`missing=[]`、`overflowN=0`、`small=[]`（无 <19px 文本）、`errs=[]`、`pagenosOk=true`（`N / M` 连续且 M=页数）、fonts 含 Xiaolai/Excalifont/JetBrains Mono；另输出每页高度供拆页判断。
+**探针（字符级）** 退出码 0 才算过，每一项单独打 `[PASS]` / `[FAIL]` / `[WARN]`：
 
-脚本自带环境兜底：浏览器用 `CHROME_EXE` 覆盖，缺省扫 `/root/.cache/ms-playwright/` 下现存 chromium 二进制（版本错配不报错）；playwright 按 **CWD** 解析（`createRequire(cwd)`）——脚本在 skill 目录或 /tmp 时 `import 'playwright'` 解析不到，这是实测坑。
+- `missing=[]`：deck 里每个字符都由自托管字体渲染。它查的是实际渲染结果——某个字回落到了系统字体，就报出字符、码位和所在的元素。
+- `overflowN=0`、`small=[]`（没有 <19px 的文本）、`hiddenSlides=[]`（没有用绝对定位或 `display:none` 藏起来的页）。
+- `pagenosOk=true`（页码是连续的 `N / M`，且 M 等于页数）、三套自托管字体都能加载（探针先把它们各加载一遍再判断，所以没有代码窗、用不到等宽字体的 deck 不会误报）、`reducedMotion=true`、`errs=[]`（没有脚本错误和加载失败的资源）。
+- `[WARN]` 不拦退出码，但要逐条看：占位符残留（TODO / TBD / 待填）、占位链接（`href="#"`，点一下会跳回页顶）、模板示例未清理、人工接受回落的字符、页内"第 N 页"引用超出了总页数（`staleRefs`）。
+- `[INFO]` 里的 `heights` 用来对照[单页高度基线](#版式与布局)。
 
-## 已知坑（血泪）
+**截图（布局级）** 探针全绿也查不出文字被撕成乱列、链接浮空、卡片层次倒挂，这些只能看图。截图落在系统临时目录下的 `deck-shots/<deck 名>/<时间戳>/` 里，不同 deck、改前改后互不覆盖。截图是给本机读图用的，落盘后自己逐张看，不要依赖"截图被转成外链后还能看见"。看完有改动就回到第 4 步重跑。
 
-- `fontTools.subset --unicodes` 接受**十六进制码点列表**，传字面字符报 `invalid literal for int()`。
-- google/fonts 仓库里 Xiaolai 路径 404；jsdelivr 对该仓 raw 返回错误页（下载到的 77 字节文件先 `file` 验证）。
-- gh-proxy 下载的文件小于 1KB 时大概率是错误页，要检查内容再继续。
-- 系统字体黑体混排 = 子集缺字，重跑脚本即可（脚本现已带覆盖自检，缺字会点名）；改字体/css 后 `?v=` 必须两处同步（脚本已自动化）。
-- playwright 浏览器版本错配：repo 依赖要的 build（如 chromium_headless_shell-1217）缓存里没有时 launch 直接报错——扫 `/root/.cache/ms-playwright/` 下现存二进制，`executablePath` 指过去（本机是 chromium-1243 arm64）。
-- **dtable 格子是 flex 容器，行内元素会被撕碎**：`.dtable > div { display:flex; align-items:center }` 下，格内每个行内元素（`<a>`/`<span>`/`<br>`/`<b>`）都是独立 flex item 横排——正文撕成乱列、链接浮在半空、长串不换行。探针全绿也查不出，只能截图发现。纪律：dtable 每个非表头格子的内容先包一层普通 `<div>`（单个 flex item，行内流恢复；垂直居中与行分隔线不变）。
-- **readout 下的 micro 行会甩孤儿字**：430px 宽的读数卡里"非 merge 提交 50 个 · 涉及文件 105 个"会折成两行、第二行只剩一个"个"。数字+单位用 `&nbsp;` 焊死只是必要条件；充分条件是每行 ≤18 个汉字，超了就主动 `<br>` 分行，别让它自己折。
-- **活 deck 回写数字会漏页**：同一数字/状态常散在多页（提示词字节数在账目页与缺口页各一份；"待做/待部署"散在下一步页与索引页）。回写前先 grep 全 deck 的字面量与状态词一次改全；索引页的新 PR 行与正文页同一次提交，否则索引立刻过期。
-- **去边框规则按列数写死**：`.dtable > div:nth-last-child(-n+3)` 假设三列；两列表的倒数第二行右格会丢行分隔线（左有线右无线）。两列表给倒数第二行右格补行内 `border-bottom`（值同 `.dtable > div`：`1.4px solid rgba(43,36,24,.35)`）。
-- **截图前必须点亮滚入动画**：`.rv` 默认 `opacity:0`，直接截是空页；先给所有 `.slide` 加 `.on` 再截（shot-deck.mjs 已内置）。
-- **playwright 在外部目录 import 不到**：脚本放 /tmp 或 skill 目录时依赖按脚本所在目录解析；用 `createRequire(path.join(process.cwd(),'noop.js'))` 按 CWD 解析，CJS 包 default import 再解构（`const { chromium } = require('playwright')`）。
-- 截图可能被执行环境转存成外链而非内联可视——字符级验收押探针；布局级验收把截图落本地文件后自己读，不依赖外链转存。
-- vitest/子集等任何 python 工具在这台机器装包用阿里云 pip 源。
-- `docker run --platform linux/amd64` 需先注册 qemu binfmt（这台 aarch64 机器上做过，约 29x 减速，与 deck 无关但常一起问）。
+### 6. 交付
 
-## 自检清单（交付前）
+向用户报告，让没看过过程的人能直接接手：
 
-- [ ] 卡片四级无倒挂、无裸 paper 背景的卡片
-- [ ] 无字号 <20px（代码窗 19px 除外）
-- [ ] 大字有空隙、专有名词没被劈开（窄窗口下检查）
-- [ ] 每页一个核心点；绝对定位/装饰没盖内容
-- [ ] 数字对齐、全 deck 一致、每处标口径；待复核/被推翻的数字带状态标注
-- [ ] 新中文跑过子集刷新（脚本自检 0 缺字）、`?v=` 两处一致
-- [ ] 程序化探针通过：missing=[]、overflow=0、字体家族齐全、pagenosOk=true
-- [ ] dtable 非表头格子内容均已包一层 div（行内元素不被 flex 撕碎）
-- [ ] 账目/索引页用均质卡阵而非 dtable 段落列；链接只出现在票号行
-- [ ] 卡阵各卡的链接/处置行沉底对齐（flex 列 + margin-top:auto）
-- [ ] 回写数字时全 deck grep 过同字面量与状态词（待做/待部署/待立项），索引页同批更新
-- [ ] 逐页截图目检过布局（探针覆盖不了文字撕列/链接浮空/层次倒挂）
-- [ ] 无新发明 CSS 类（内容全用既有类拼装）；无虚构时间线/比喻
-- [ ] `prefers-reduced-motion` 兜底存在
-- [ ] 向用户列出浏览器抽查点（程序化探针覆盖不了的：观感、配色、层次）
+- 文件路径、页数、字体子集体积。
+- 探针结果，以及目检了哪些页、改过什么。
+- 需要用户在浏览器里抽查的点——探针和截图都覆盖不了的：整体观感、配色、窄窗口下的效果。手机宽度（约 420px）下整份 deck 会缩到 0.22×，小字读不了，要如实告诉用户。
+- 哪些数字带着"复核中 / 审计中"的标注，等谁来更新。
+- 来源材料里缺的口径、负责人，以及和系统日期对不上的时间窗：页面上如实标注了什么，就在这里列出来问。
+
+deck 目录里只留交付物（`index.html`、`fonts/`），截图等中间产物留在临时目录。
+
+## 更新已有 deck
+
+deck 是活文档，改数字、加页比从零做更常见。这时不走草案和起手，按下面五步：
+
+1. **先 grep 再动手。** 把要改的数字、状态词（待做 / 待部署 / 待立项）在整份 deck 里搜一遍，每个出现的地方都列出来。同一个数常常散在标题、读数卡、对比条、账目卡和索引页。类名契约以这份 deck 自己的 `<style>` 为准，不要换成模板的写法。
+2. **派生的东西跟着源数字改。** 对比条的宽度、百分比、差值是由数字算出来的，grep 搜不到。模板的对比条把源数字写在行内（`style="--v:175;--max:420"`），和标签是同一对；旧 deck 里手算出来的宽度要自己找出来重算。
+3. **插页或删页之后**，把全部页码改成 `N / M`，再搜一遍页内的"第 N 页"引用并核对指向。批量替换 `/ 7` 会把最后一页变成 `7 / 8`、和新页撞号——探针的 `pagenosOk` 和 `staleRefs` 会拦，但别等它。
+4. **状态变了，汇总它的地方要重新推导。** 一条从"待拍板"变成"已拍板"，尾页标题里的"两件事"就不再成立；账目页的处置行、索引页的状态也要一起改。
+5. 改完回到[字体子集刷新](#4-字体子集刷新)往下走。交付时逐条列出动了哪些页的哪些地方，以及靠推断做的地方——比如把两处同名读数当成同一个数一并改了——让用户一眼能核对。
+
+## 内容纪律
+
+**标题写结论，不写主题词。** 读者是扫着标题往下读的，标题说清"这页证明了什么"，这一页才值得细看。标题必须是一句可以被事实推翻的话，而不是一个范围。
+
+| ❌ 主题词 | ✅ 结论句 |
+|---|---|
+| 关键指标 | 重试层上线后，接口失败率从 3.1% 降到 0.4% |
+| 改动说明 | 改动集中在重试函数的十几行里 |
+| 后续计划 | 还需要拍板两件事，其余已排期 |
+
+**每页只讲一件事。** 装不下就拆页，不要缩字号，也不要塞满。
+
+**数字诚实性。** 汇报的价值全在数字可信：
+
+- 同一个数字全 deck 一致。改一处之前先 grep 整份 deck 的字面量。
+- 由数字算出来的东西（条宽、百分比、差值）跟着源数字走，不单独手填。
+- 理论值和实测值不跨口径相减；每个读数旁边标口径（n、trial 数、来源）。
+- 数据只能来自真实日志和记录，不编。估算值标"估"，和实测分开写。来源材料没给口径的数字，标"待补口径"或直接问用户，不要自己补一个口径。
+- 诚实结论优先于好看结论。
+
+**过时可见。** deck 是活文档：被审计、待复核、已部分推翻的数字必须带状态标注（如"审计复核中"），不让读者把有问题的数字当成定论。
+
+**叙事纪律。** 这是用户明确划过的红线：
+
+- 不造时间线，除非内容本身真是时序。
+- 不用比喻链条（"机制 → 尺子"这类造出来的比喻一律不要）。
+- 平铺直叙说事实和结论，结构跟着内容走，不为观感虚构结构。
+
+**尾页收在决策上。** 写清楚要读者拍板什么、下一步谁做，不写"谢谢 / 欢迎交流"。
+
+## 视觉规范
+
+这一节的数值都在模板的 `:root` 和各类定义里，起手用模板就不用手抄；这里说明每条规则为什么存在。
+
+### 底色与卡片
+
+- 墨线 `--ink:#2b2418`，羊皮纸底 `--paper:#f4ecd8`。纸面**不做旧**：只留两层极淡的 radial 纸纹，再加就显脏。
+- 圆角不规整（主卡 `8px 12px 9px 11px / 11px 8px 12px 9px`，子卡另设一组），这是手绘感的来源。阴影一律实色偏移、**不用模糊**，模糊会让纸上的墨线显得发虚。
+- **卡片四级**，硬度逐级递减、不许倒挂，也不许拿裸 `--paper` 填卡片（会和纸面融成一个洞）：
+
+  | 层级 | 边 | 底 | 阴影 | 用来放 |
+  |---|---|---|---|---|
+  | `.card` | 2px 墨线 | 纸色加斜线纹理 | `4px 4px 0` | 页面主框 |
+  | `.subcard` | 1.5px 墨线 | 纸色 | `3px 3px 0` | 主框里的子块、卡阵里的一张卡 |
+  | `.inset` | 1.4px 半透明 | 略深的纸色 | 无 | 卡内的分组、对比条的轨道 |
+  | `.anno` | 左侧 5px 强调色条 | 柔色底 | 无 | 口径说明、结论、状态标注 |
+
+- **A vs B 对比**：主推项用带斜线纹理的 `.card`，对照项用素色的 `.subcard`，靠底纹分主次。
+- **对比条**：线型和色相双重区分——基线用斜纹加异色边，主项用实色。只靠颜色区分的话，打印出来和色弱读者都分不出来。宽度由行内的 `--v` / `--max` 算出来：`<div class="bar" style="--v:180;--max:420">`。同一项里较大的读数画满宽，`--max` 就取它；条的长短只在同一项内可比。
+- **徽标语义固定**：`badge good` 是定了、不用再跟（已修复 / 已拍板）；`badge warn` 是进行中或等结论（灰度中 / 复核中 / 待拍板 / 已排期）；`badge bad` 是没开始或被卡住（待立项）。同一个状态在整份 deck 里用同一种颜色，读者才认得出来。
+
+### 字体与字号
+
+- 三件字体全部自托管：拉丁 Excalifont、中文 Xiaolai（不用 LongCang / Ma Shan Zheng）、代码 JetBrains Mono。获取方式见[字体管线](#字体管线)。
+- **字号下限 20px**，唯一例外是代码窗的 19px。汇报页常被投屏，也常被缩放后阅读，再小就读不动了。字号一律走模板里的 `--fs-*` token，只用这几个档位：stat 80 / readout 64 / title 56 / body 28 / h3 26 / mono-md 22 / label 20 / micro 20。
+- 80px 的 stat 行高 ≥ 1.1（scale 里没有 >100px 的档）。
+- 手写体只有单字重：层级靠字号和颜色做，不要加粗，浏览器合成的粗体会糊成一团。
+
+### 折行
+
+- 短标签加 `nowrap`；专有名词、数字加单位用 `&nbsp;` 焊死（`GLM-5.3-Flash`、`2/4 → 3/4`、`50&nbsp;个`），不让它们被劈到两行。
+- 正文用 `word-break: keep-all`，好处是词不会被腰斩；代价是**只在标点和空格处折行**，一个没标点的长句放不下一行就直接溢出。所以分句要短：三列卡的正文一个分句不超过 18 个字。
+- 读数卡里的说明行，行尾甩出一个孤零零的"个"字很难看。焊死数字和单位只是必要条件，充分条件是每行不超过 18 个汉字，超了就主动 `<br>` 分行，别让它自己折。
+- 代码窗和其它等宽文本只用 ASCII（外加 `·` 和 `→`）：JetBrains Mono 的子集只收了这些，混进中文会回落。行宽也有限（19px 下每列 11.4px）：全宽窗不超过 150 列，两列布局里的半宽窗不超过 72 列。
+
+### 版式与布局
+
+- **可滚动的单页，不翻页。** 设计宽 1920px，`fit()` 按视口宽缩放（上限 1.3×），并用 deck 的实际高度回写 stage 的高度，否则页尾会多出一段空白。
+- `.slide` 在普通流里纵向堆叠，**不要**用绝对定位或 `opacity:0` 藏页——读者靠滚动和链接锚点到达，藏起来的页等于不存在。
+- 滚入动画用 IntersectionObserver（threshold 0.12，进入即停止观察），并用 `prefers-reduced-motion` 兜底直接显示。
+- **跨页引用用锚点。** 给被引用的那一页加语义化的 `id`（`<section class="slide" id="ledger">`），引用处写 `<a href="#ledger">第 6 页</a>`。`id` 不要用页码：插页之后链接照样有效，只有链接文字里的页码需要手改。
+- 每页有一个视觉焦点（大数字、对比条、代码窗或卡阵），其余都是它的支撑。
+- **单页高度基线**：超过 ~1400px 通常是一页讲了两件事，先拆页，再删文案。数字的口径是探针输出的 `heights`（1680 宽视口下按 0.875× 缩放后的像素）。参考值：内容充实的正常页大约在 810–1150px；页比这矮不是问题，模板的示例页就比它矮，不要为了凑高度加内容；比它高才需要看。例外是均质卡阵的账目页和索引页（六卡三列实测 1400–1500px），那仍然是一件事，看截图里卡高齐不齐、底线齐不齐，而不是看绝对高度。要压高度，先砍页顶的汇总块、注解和名词表，再砍卡片正文，最后才动链接行。
+
+### 代码窗
+
+VSCode Dark+ 的手写窗，不引高亮库：底色 `#1e1e1e` 加 mac 三圆点。token 只标六类——注释 `#6a9955`、关键字 `#569cd6`、字符串 `#ce9178`、函数名 `#dcdcaa`、类名 `#4ec9b0`、数字 `#b5cea8`。代码里的 `<` `>` `{` `}` 写成转义。每窗不超过 22 行。
+
+### 简表与密表
+
+- **简表 `.dtable`** 只用在每格都是短语的表上。格子本身是 flex 容器，**每个格子的内容先包一层普通 `<div>`** 再放行内元素。不包的话，格里的 `<a>`、`<span>`、`<br>` 各自成为一个 flex item 横排，正文会被撕成乱列、链接浮在半空。
+- **密表改卡阵。** 一页内容是"N 层 × 属性"的账目（差异账、失败解剖、能力清单）时，不要用 `.dtable` 的 1fr 段落列：段落里混着行内链接、`<br>`、`<span>` 时行高会撕裂，这就是"文字布局很乱"的来源。改成两列或三列的均质 `.subcard` 卡阵，每卡固定四槽：
+  1. 头部徽标行——`badge solid` 序号、`t-h3` 标题、右侧状态徽标（`margin-left:auto`）
+  2. 正文短句——不超过 4 行，行内不放链接
+  3. 票号链接行——`t-micro`，链接只在这一行出现；没有票号的账目，这一行放口径或来源
+  4. 影响面 / 处置行
+
+  票号到 PR 的全量对应放在索引页，账目页只列票号。
+- **卡阵沉底对齐。** grid 会把矮卡拉到等高，多出来的高度堆在卡片底部，一排卡的链接行就高低不齐。给每卡加行内 `display:flex; flex-direction:column`，再把第 ③④ 槽的容器设为 `margin-top:auto; padding-top:12px`：链接行和处置行对齐到同一条底线，行高差被吸收成卡片中部的留白。
+
+### 类名契约
+
+**改内容、加页都不发明新的 CSS 类。** 用模板里已有的类（`card` / `subcard` / `inset` / `anno` / `t-*` / `badge` / `bar` / `codewin` / `dtable` / `grid2`–`grid4`）加 grid、flex 拼装；一次性的差异（列宽、沉底）写行内 style。新组件——比如一张汇总总账——也用这套类拼出来。
+
+这样做有两层好处：全 deck 的风格自动一致；也不会出现两个页面的新类互相覆盖、调了半天样式对撞的情况。同系列已有旧 deck 时，契约以旧 deck 的 `<style>` 为准。
+
+## 字体管线
+
+三套源字体（四个文件）放进 `$DECK/fonts/`，子集脚本从那里读。下载完核对大小再继续：Xiaolai 约 22MB，JetBrains Mono 约 270KB；只有几百字节的多半是代理返回的错误页。
+
+```bash
+DECK=<deck目录>
+mkdir -p "$DECK/fonts"
+
+# Excalifont：官方 npm 包里的两个子集，合计约 27KB
+mkdir -p /tmp/excali-pkg && cd /tmp/excali-pkg && npm pack @excalidraw/excalidraw@0.18.0 && tar xzf excalidraw-*.tgz
+cp package/dist/prod/fonts/Excalifont/Excalifont-Regular-a88b72a24fb54c9f94e3b5fdaa7481c9.woff2 "$DECK/fonts/Excalifont-latin.woff2"
+cp package/dist/prod/fonts/Excalifont/Excalifont-Regular-3f2c5db56cc93c5a6873b1361d730c16.woff2 "$DECK/fonts/Excalifont-latin-ext.woff2"
+
+# Xiaolai 全量 TTF（22MB，子集后约 75KB）。文件大，经代理容易断，-C - 支持断点续传
+curl -sL -C - -o "$DECK/fonts/Xiaolai.ttf" "https://gh-proxy.com/https://github.com/Auriand20031203/xiaolai-font/raw/main/Xiaolai-Regular.ttf"
+
+# JetBrains Mono
+curl -sL -o "$DECK/fonts/JetBrainsMono-Regular.ttf" "https://gh-proxy.com/https://github.com/JetBrains/JetBrainsMono/raw/master/fonts/ttf/JetBrainsMono-Regular.ttf"
+```
+
+## 已知坑速查
+
+| 症状 | 修法 |
+|---|---|
+| 中文里夹着印刷体的字 | 子集缺字。重跑子集脚本；探针的 `missing` 会指出是哪个字、在哪。 |
+| 简表格子里的文字被撕成几列，链接浮空 | 格子是 flex 容器：内容先包一层 `<div>`。 |
+| 读数卡说明行行尾甩出一个孤字 | 数字和单位 `&nbsp;` 焊死；每行不超过 18 个字，超了主动 `<br>`。 |
+| 文案不折行，冲出卡片 | `keep-all` 只在标点和空格处折行：把分句写短，或加标点。 |
+| 截图是空页 | 滚入动画没点亮。用 `shot-deck.mjs`，它会先给每页加 `.on`。 |
+| 两列表最后一行的行线错位 | 去边框的规则按三列写死了。模板用 `data-cols`；旧 deck 给倒数第二行右格手补 `border-bottom`。 |
+| 改了一个数字，别的页还是旧的 | 回写前 grep 全 deck 的字面量和状态词（待做 / 待部署 / 待立项），索引页同一批改。 |
+| 数字改了，对比条的宽度没变 | 条宽是算出来的，grep 不到。用模板的 `.bar`（`--v` / `--max`）；旧 deck 里手算的找出来重算。 |
+| 插页后页码撞号，或"第 N 页"指错 | 全部页码改成 `N / M`，别批量替换 `/ 7`；再搜一遍"第 N 页"核对指向。 |
+| git 显示整份 index.html 全量变更 | Windows 上的换行符被改写了。新版子集脚本保留原换行。 |
+| 下载的字体只有几百字节或只有半截 | 代理返回了错误页或传输中断。核对大小；Xiaolai 用 `curl -C -` 续传。 |
+| node 报找不到 playwright | 脚本按当前目录解析依赖，到装了 playwright 的目录里跑。 |
+| 浏览器启动失败 | `npx playwright install chromium`，或把 `CHROME_EXE` 指向本机 Chrome / Edge。 |
+
+更细的原因、以及 `fontTools`、版本错配、Windows 编码、`document.fonts.check` 恒真、页高口径等坑，见 `references/pitfalls.md`。
+
+## 交付自检清单
+
+- [ ] 每页标题是结论句，每页一个核心点；尾页写明要拍板的事
+- [ ] 卡片四级无倒挂，没有裸 `--paper` 背景的卡片；绝对定位和装饰没盖住内容
+- [ ] 无字号 <20px（代码窗 19px 除外）；大字有空隙；专有名词和数字没被劈开（窄窗口下检查）
+- [ ] 数字全 deck 一致、每处标口径；估算值已标注；待复核 / 被推翻的数字带状态标注
+- [ ] 没有占位符（TODO / TBD / 待填），模板示例页和示例数字已全部替换
+- [ ] 改完文案跑过子集刷新（脚本自检无缺字，或已逐个处置）
+- [ ] 探针通过：`missing=[]`、`overflowN=0`、`small=[]`、`errs=[]`、`pagenosOk=true`、`hiddenSlides=[]`、`reducedMotion=true`、字体三件齐全
+- [ ] dtable 非表头格子的内容都包了一层 `<div>`
+- [ ] 账目页和索引页用均质卡阵而不是 dtable 段落列，链接只出现在票号行
+- [ ] 卡阵各卡的链接行 / 处置行沉底对齐
+- [ ] 逐页截图目检过布局（探针查不出文字撕列、链接浮空、层次倒挂）
+- [ ] 没有发明新的 CSS 类；没有虚构时间线、没有比喻链条
+- [ ] deck 目录里只有交付物，中间产物不在里面
+- [ ] 更新已有 deck 时：grep 过全部同名数字和状态词，派生值已重算，页内"第 N 页"的引用和锚点指向正确
+- [ ] 已向用户列出浏览器抽查点

@@ -1,33 +1,46 @@
 # hand-drawn-deck
 
-手绘（Excalidraw 风格）中文技术 HTML deck 技能——单文件、零 CDN、可滚动的汇报页生成规范与工具链。
-
-给 Claude Code / 其他 agent 用：装到 `~/.claude/skills/hand-drawn-deck/` 即可触发。
+手绘（Excalidraw 风）中文技术汇报页技能：把报告、审计、实验结果做成**单文件、零 CDN、可滚动**的手绘风网页。
 
 ## 安装
+
+ZCode，以及其它认 `.agents/skills` 目录的 agent：
+
+```bash
+git clone https://github.com/Liears/hand-drawn-deck.git ~/.agents/skills/hand-drawn-deck
+```
+
+Claude Code：
 
 ```bash
 git clone https://github.com/Liears/hand-drawn-deck.git ~/.claude/skills/hand-drawn-deck
 ```
 
-首次使用需装字体工具：`pip3 install fonttools brotli`（中国大陆：`-i https://mirrors.aliyun.com/pypi/simple/`）。
+依赖：
+
+- Python 3 加 `fonttools`、`brotli`：`pip3 install fonttools brotli`（中国大陆加 `-i https://mirrors.aliyun.com/pypi/simple/`）。
+- Node 加 playwright：验证脚本用，在任意一个目录里 `npm init -y && npm i playwright && npx playwright install chromium`，之后在这个目录里跑脚本。
 
 ## 里面有什么
 
 | 文件 | 内容 |
 |---|---|
-| `SKILL.md` | 完整规范：工作流（结构草案先行）、四级卡片体系、字号 token、fit 缩放、滚入动画、代码窗、数字诚实性、自检清单、坑清单 |
-| `scripts/refresh_cjk_subset.py` | CJK 子集刷新：扫描 HTML 实际用字 → Xiaolai 子集化（全量 22MB → <100KB）→ 生成 fonts.css + `?v=` 双处自动同步 |
-| `scripts/verify-deck.mjs` | 字符级探针：缺字/溢出/字号下限/页码连续/资源加载/每页高度；playwright 按 CWD 解析、chromium 二进制自动兜底 |
-| `scripts/shot-deck.mjs` | 布局级目检：逐页 element 截图（自动点亮滚入动画），配合读图工具查"文字撕列"这类探针查不出的问题 |
+| `SKILL.md` | 工作流（结构草案先行 → 拼装 → 字体子集 → 两级验证 → 交付）、更新已有 deck 的流程、内容纪律、视觉规范、已知坑速查、自检清单 |
+| `assets/template.html` | 起手模板：八个页型各占一页，是"类名契约"的参考实现 |
+| `scripts/refresh_cjk_subset.py` | 字体子集刷新：扫描 HTML 实际用到的非 ASCII 字符 → Xiaolai 子集化（22MB → 约 75KB）→ 生成 fonts.css 并同步 `?v=`，自带字形覆盖自检 |
+| `scripts/verify-deck.mjs` | 字符级探针：逐字符确认由自托管字体渲染，另查溢出、字号下限、页码连续、藏页、资源加载、占位符残留；退出码可用 |
+| `scripts/shot-deck.mjs` | 布局级目检：逐页截图（自动点亮滚入动画），配合读图工具查"文字撕列"这类探针查不出的问题 |
+| `scripts/_browser.mjs` | 上面两个脚本共用：按平台定位 playwright 与 chromium，接受 URL 或本地路径 |
+| `references/pitfalls.md` | 故障手册：按症状索引的踩坑记录 |
 
 ## 设计要点
 
-- 墨线 `#2b2418` / 羊皮纸 `#f4ecd8`，hachure 斜线主框 + 不规整圆角 + 实色偏移阴影
-- 字体三件自托管：Excalifont（拉丁，官方 npm 子集）/ Xiaolai（中文，子集化）/ JetBrains Mono（代码）
-- 字号 floor 20px；设计宽 1920 + `fit()` 视口缩放（上限 1.3×）；滚动式非翻页
-- 数字诚实性纪律：同一数字全 deck 一致、口径必标、诚实结论优先于好看结论
+- 墨线 `#2b2418`、羊皮纸 `#f4ecd8`，斜线纹理主框、不规整圆角、实色偏移阴影，卡片分四级
+- 字体三件自托管：Excalifont（拉丁，官方 npm 子集）、Xiaolai（中文，子集化）、JetBrains Mono（代码）
+- 字号下限 20px；设计宽 1920 加 `fit()` 视口缩放（上限 1.3×）；滚动式，不翻页
+- 两级验证：探针查字符级，截图查布局级
+- 数字诚实性：同一数字全 deck 一致、口径必标、诚实结论优先于好看结论
 
 ## 来源
 
-2026-09-09 在 DeepAnalyze 编码能力汇报 deck 的实作中定型（踩坑记录见 SKILL.md「已知坑」）。
+2026-09-09 在 DeepAnalyze 编码能力汇报 deck 的实作中定型。踩坑记录见 `SKILL.md` 的"已知坑速查"和 `references/pitfalls.md`。
