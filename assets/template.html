@@ -640,7 +640,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
   }
 
   // 折线图：坐标全部由数据算出来。y 轴线性映射，x 轴按点的先后等距——时间间隔不等的数不要用它画。
-  // 数值只标四个关键点：首尾两点的数值写在图的外侧，中间的最高点标在上方、最低点标在下方。
+  // 图形（网格、轴、填充、折线、点、事件线）过一层位移滤镜，线条才带手绘的抖；文字不进滤镜，保持清楚。
   function drawLine(el) {
     var labels = (el.getAttribute('data-labels') || '').split(',');
     var values = (el.getAttribute('data-values') || '').split(',').map(Number);
@@ -667,20 +667,46 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
     var X = function (i) { return padL + i * plotW / (n - 1); };
     var Y = function (v) { return padT + (y1 - v) * plotH / (y1 - y0); };
     var r = function (v) { return Math.round(v * 10) / 10; };
+    var seq = (drawLine.seq = (drawLine.seq || 0) + 1);
+    var pat = 'hatch-' + seq, fx = 'wobble-' + seq;
+    var seed = 1 + (el.getAttribute('data-title') || '').length % 7;   // 每个图固定种子：刷新后抖动一模一样
     var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="'
       + (el.getAttribute('data-title') || '') + '">';
-    var pat = 'hatch-' + (drawLine.seq = (drawLine.seq || 0) + 1);
     s += '<defs><pattern id="' + pat + '" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
-      + '<line x1="0" y1="0" x2="0" y2="12" stroke="rgba(43,36,24,.16)" stroke-width="2"/></pattern></defs>';
+      + '<line x1="0" y1="0" x2="0" y2="12" stroke="rgba(43,36,24,.16)" stroke-width="2"/></pattern>'
+      + '<filter id="' + fx + '" x="-2%" y="-2%" width="104%" height="104%">'
+      + '<feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="' + seed + '" result="n"/>'
+      + '<feDisplacementMap in="SourceGraphic" in2="n" scale="3" xChannelSelector="R" yChannelSelector="G"/>'
+      + '</filter></defs>';
     s += '<rect class="plot" x="' + padL + '" y="' + padT + '" width="' + plotW + '" height="' + plotH + '"/>';   // 绘图区垫素底，和卡片的斜纹分开
-    var i, v;
-    for (i = 0; i <= ticks; i++) {                                 // 横向网格和纵轴刻度
+    var i, v, g = '';
+    for (i = 0; i <= ticks; i++) {                                 // 横向网格
       v = y0 + tick * i;
-      s += '<line class="grid" x1="' + padL + '" y1="' + r(Y(v)) + '" x2="' + (W - padR) + '" y2="' + r(Y(v)) + '"/>'
-        + '<text x="12" y="' + r(Y(v) + 7) + '">' + Math.round(v * 100) / 100 + '</text>';
+      g += '<line class="grid" x1="' + padL + '" y1="' + r(Y(v)) + '" x2="' + (W - padR) + '" y2="' + r(Y(v)) + '"/>';
     }
-    s += '<line class="axis" x1="' + padL + '" y1="' + (padT - 14) + '" x2="' + padL + '" y2="' + (H - padB) + '"/>'
+    g += '<line class="axis" x1="' + padL + '" y1="' + (padT - 14) + '" x2="' + padL + '" y2="' + (H - padB) + '"/>'
       + '<line class="axis" x1="' + padL + '" y1="' + (H - padB) + '" x2="' + (W - padR + 20) + '" y2="' + (H - padB) + '"/>';
+    var pts = '', area = '';
+    for (i = 0; i < n; i++) {
+      pts += (i ? ' ' : '') + r(X(i)) + ',' + r(Y(values[i]));
+      area += (i ? ' L' : 'M') + r(X(i)) + ' ' + r(Y(values[i]));
+    }
+    g += '<path d="' + area + ' L' + r(X(n - 1)) + ' ' + (H - padB) + ' L' + padL + ' ' + (H - padB) + ' Z" fill="url(#' + pat + ')"/>';
+    var mk = el.getAttribute('data-mark'), m = mk ? labels.indexOf(mk) : -1;
+    if (m >= 0) {
+      g += '<line class="mark" x1="' + r(X(m)) + '" y1="' + (padT - 14) + '" x2="' + r(X(m)) + '" y2="' + (H - padB) + '"/>';
+    }
+    g += '<polyline class="line" points="' + pts + '"/>';
+    for (i = 0; i < n; i++) g += '<circle class="dot" cx="' + r(X(i)) + '" cy="' + r(Y(values[i])) + '" r="7"/>';
+    s += '<g filter="url(#' + fx + ')">' + g + '</g>';
+    for (i = 0; i <= ticks; i++) {                                 // 纵轴刻度，文字不进滤镜
+      v = y0 + tick * i;
+      s += '<text x="12" y="' + r(Y(v) + 7) + '">' + Math.round(v * 100) / 100 + '</text>';
+    }
+    if (m >= 0) {
+      s += '<text class="mark-text" x="' + r(Math.min(Math.max(X(m), padL + 50), W - padR - 50)) + '" y="' + (padT - 24)
+        + '" text-anchor="middle">' + (el.getAttribute('data-mark-text') || labels[m]) + '</text>';
+    }
     var step = Math.max(1, Math.ceil(n * 120 / plotW));             // 横轴标签太密就隔几个标一个
     for (i = 0; i < n; i += step) {
       s += '<text x="' + r(X(i)) + '" y="' + (H - 16) + '" text-anchor="middle">' + labels[i] + '</text>';
@@ -688,24 +714,10 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
     if ((n - 1) % step >= Math.ceil(step / 2)) {
       s += '<text x="' + r(X(n - 1)) + '" y="' + (H - 16) + '" text-anchor="end">' + labels[n - 1] + '</text>';
     }
-    var pts = '', area = '';
-    for (i = 0; i < n; i++) {
-      pts += (i ? ' ' : '') + r(X(i)) + ',' + r(Y(values[i]));
-      area += (i ? ' L' : 'M') + r(X(i)) + ' ' + r(Y(values[i]));
-    }
-    s += '<path d="' + area + ' L' + r(X(n - 1)) + ' ' + (H - padB) + ' L' + padL + ' ' + (H - padB) + ' Z" fill="url(#' + pat + ')"/>';
-    var mk = el.getAttribute('data-mark'), m = mk ? labels.indexOf(mk) : -1;
-    if (m >= 0) {
-      s += '<line class="mark" x1="' + r(X(m)) + '" y1="' + (padT - 14) + '" x2="' + r(X(m)) + '" y2="' + (H - padB) + '"/>'
-        + '<text class="mark-text" x="' + r(Math.min(Math.max(X(m), padL + 50), W - padR - 50)) + '" y="' + (padT - 24)
-        + '" text-anchor="middle">' + (el.getAttribute('data-mark-text') || labels[m]) + '</text>';
-    }
-    s += '<polyline class="line" points="' + pts + '"/>';
-    for (i = 0; i < n; i++) s += '<circle class="dot" cx="' + r(X(i)) + '" cy="' + r(Y(values[i])) + '" r="7"/>';
-    [0, n - 1, iLo, iHi].filter(function (k, idx, a) { return a.indexOf(k) === idx; }).sort(function (a, b) { return a - b; })
+    [0, n - 1, iLo, iHi].filter(function (k, idx, a2) { return a2.indexOf(k) === idx; }).sort(function (a2, b2) { return a2 - b2; })
       .forEach(function (k) {
         var x, y, anchor;
-        var edgeY = function (v) { return Math.min(Math.max(Y(v) + 9, padT + 22), H - padB - 12); };   // 点贴着上下边时，数值不骑在轴线上
+        var edgeY = function (val) { return Math.min(Math.max(Y(val) + 9, padT + 22), H - padB - 12); };   // 点贴着上下边时，数值不骑在轴线上
         if (k === 0) { x = padL - 18; y = edgeY(values[0]); anchor = 'end'; }
         else if (k === n - 1) { x = X(k) + 18; y = edgeY(values[k]); anchor = 'start'; }
         else if (k === iHi) { x = X(k); y = Y(values[k]) - 22; anchor = 'middle'; }

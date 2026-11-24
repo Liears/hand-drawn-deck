@@ -58,4 +58,7 @@ git clone https://github.com/Liears/hand-drawn-deck.git ~/.claude/skills/hand-dr
 - [superpowers](https://github.com/obra/superpowers)（MIT）：只问会改变结构的问题、"用户给的 / 我补的"分栏、数字口径表、没有新证据不声称完成
 - [zh-tech-writing](https://github.com/leter/zh-tech-writing)（MIT）、[中文文案排版指北](https://github.com/sparanoid/chinese-copywriting-guidelines)（MIT）、[document-style-guide](https://github.com/ruanyf/document-style-guide)（公共领域）：AI 腔清单、句长与段落上限、中英文混排规则
 - [dataviz-skills](https://github.com/holtzy/dataviz-skills)（MIT）：图表错误清单（双 Y 轴、挑数据、排序、图例、取整、波动范围）
-- ZCode 的 Excalidraw 插件与 [excalidraw-skill](https://github.com/robonuggets/excalidraw-skill)（MIT）：示意图只画有依据的关系、线型表达含义、箭头带标签
+- ZCode 的 Excalidraw 插件与 [excalidraw-skill](https://github.com/robonuggets/excalidraw-skill)：示意图只画有依据的关系、线型表达含义、箭头带标签
+- [excalidraw-diagram-skill](https://github.com/coleam00/excalidraw-diagram-skill)、[hand-drawn-diagrams](https://github.com/muthuishere/hand-drawn-diagrams)（MIT）、[sketchy](https://github.com/ddkbs/sketchy)（MIT）：同构测试、按关系选形态、箭头不穿节点、容器默认不用
+- [chart.xkcd](https://github.com/timqian/chart.xkcd)（MIT）：折线图的手绘位移滤镜（feTurbulence + feDisplacementMap，文字不进滤镜）
+- [rough.js](https://github.com/rough-stuff/rough)（MIT）：手绘线条的双笔抖动、不闭合椭圆、斜纹填充的做法，参考了原理，没有内嵌它的代码
