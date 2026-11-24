@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <!-- 模板标记：示例页全部替换完之后删掉这一行（探针见到它会提醒"示例未清理"） -->
+<!-- 注意：在本目录直接打开这份模板是看不到手写体的——这里没有 fonts/。想先看效果看同目录的 template-preview.png；
+     真要用，按 SKILL.md 拷到 deck 目录、跑一次字体子集脚本，再打开。字体没加载时页顶会出现红色提示。 -->
 <meta name="deck-template" content="sample">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>标题</title>
@@ -489,6 +491,43 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
   }
   fit();
   window.addEventListener('resize', fit);
+  fontGuard();
+
+  // 字体没加载时不许静默回落成系统字体。从 skill 目录直接打开模板、或 fonts/ 没跟 index.html 放在一起时，
+  // 浏览器会拿系统字体顶上，看上去就"不是手写体了"，而页面上毫无提示——这里在页顶挂一条。
+  function fontGuard() {
+    var nameOf = function (f) { return f.family.replace(/^["']|["']$/g, ''); };
+    var check = function (faces) {
+      var missing = ['Xiaolai', 'Excalifont'].filter(function (n) {
+        return !faces.some(function (f) { return nameOf(f) === n; });
+      });
+      Promise.all(faces.map(function (f) { return f.load().catch(function () { return null; }); })).then(function () {
+        var broken = faces.filter(function (f) { return f.status === 'error'; }).map(nameOf);
+        if (!missing.length && !broken.length) return;
+        var bar = document.createElement('div');
+        bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9;padding:10px 16px;font:16px/1.5 system-ui,sans-serif;color:#fff;background:#a8322a';
+        bar.textContent = '字体未加载，现在显示的是系统字体。'
+          + (missing.length ? '缺少字体声明：' + missing.join('、') + '。' : '')
+          + (broken.length ? '字体文件加载失败：' + broken.join('、') + '。' : '')
+          + '请把 fonts/ 目录和 index.html 放在一起；用模板起手时，先跑一次字体子集脚本再打开。';
+        document.body.appendChild(bar);
+      });
+    };
+    // CSS 里的字体声明要等样式表应用之后才登记进 document.fonts，连 load 事件那一刻都可能还是空的：
+    // 轮询到它出现为止，最多等两秒，等不到才判定为"缺少字体声明"。
+    // document.fonts 是类 Set 的集合，没有 length，不能用 Array.prototype.slice 取
+    var allFaces = function () {
+      var faces = [];
+      document.fonts.forEach(function (f) { faces.push(f); });
+      return faces;
+    };
+    var poll = function (tries) {
+      var faces = allFaces();
+      if (faces.length || tries <= 0) return check(faces);
+      setTimeout(function () { poll(tries - 1); }, 100);
+    };
+    if (document.readyState === 'complete') poll(20); else window.addEventListener('load', function () { poll(20); });
+  }
 
   // 滚入动画：页进入视口 12% 即点亮并停止观察（只动一次）
   if ('IntersectionObserver' in window) {

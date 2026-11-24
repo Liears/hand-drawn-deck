@@ -26,7 +26,8 @@ git clone https://github.com/Liears/hand-drawn-deck.git ~/.claude/skills/hand-dr
 | 文件 | 内容 |
 |---|---|
 | `SKILL.md` | 工作流（结构草案先行 → 拼装 → 字体子集 → 两级验证 → 交付）、更新已有 deck 的流程、内容纪律、视觉规范、已知坑速查、自检清单 |
-| `assets/template.html` | 起手模板：八个页型各占一页，是"类名契约"的参考实现 |
+| `assets/template.html` | 起手模板：八个页型各占一页，是"类名契约"的参考实现。字体文件不进仓库，所以在本目录直接打开它看到的不是手写体（页顶会有红色提示）；拷到 deck 目录并跑一次字体子集脚本之后才是 |
+| `assets/template-preview.png` | 模板渲染好的样子：八页拼成一张长图，小赖体 + Excalifont 已加载 |
 | `scripts/refresh_cjk_subset.py` | 字体子集刷新：扫描 HTML 实际用到的非 ASCII 字符 → Xiaolai 子集化（22MB → 约 75KB）→ 生成 fonts.css 并同步 `?v=`，自带字形覆盖自检 |
 | `scripts/verify-deck.mjs` | 字符级探针：逐字符确认由自托管字体渲染，另查溢出、字号下限、页码连续、藏页、资源加载、占位符残留；退出码可用 |
 | `scripts/shot-deck.mjs` | 布局级目检：逐页截图（自动点亮滚入动画），配合读图工具查"文字撕列"这类探针查不出的问题 |

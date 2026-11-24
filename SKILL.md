@@ -14,6 +14,7 @@ description: 把技术内容做成手绘风（Excalidraw 风、羊皮纸底）�
 | 文件 | 什么时候用 |
 |---|---|
 | `assets/template.html` | 起手时拷它。八个页型各占一页，是"类名契约"的参考实现；写页时照着对应的那一页拷。 |
+| `assets/template-preview.png` | 想先看模板渲染好的样子（手写体已加载，八页拼成一张长图）。模板在 skill 目录里直接打开是没有字体的。 |
 | `scripts/refresh_cjk_subset.py` | 每次改完 HTML 文案后跑。 |
 | `scripts/verify-deck.mjs` | 交付前跑。字符级探针，退出码可用。 |
 | `scripts/shot-deck.mjs` | 交付前跑。逐页截图，供目检。 |
@@ -54,6 +55,7 @@ description: 把技术内容做成手绘风（Excalidraw 风、羊皮纸底）�
 - 同系列已有旧 deck：拷它的 `<style>` 和 `<script>`。那份 CSS 才是真正的类名契约，模板只是没有可拷对象时的参考实现。
 - 没有：`cp "$SKILL_DIR/assets/template.html" "$DECK/index.html"`，用真实内容替换八页示例。**示例里的数字全是编的，一个都不能留**；填完删掉 `<meta name="deck-template">`（留着的话探针会提醒示例未清理）。
 - 预览：浏览器直接打开文件即可。两个验证脚本接受本地路径，也接受 `http://` 地址。
+- **在 skill 目录里直接打开模板，看到的不是手写体**：那里没有 `fonts/`，浏览器会拿系统字体顶上，模板会在页顶出一条红色提示。想先看效果看 `assets/template-preview.png`；拷到 deck 目录、跑过一次字体子集脚本之后再打开，才是小赖体加 Excalifont。读者打开 deck 时如果看到这条红提示，说明 `fonts/` 没跟 `index.html` 放在一起。
 
 ### 3. 逐页拼装
 
