@@ -140,11 +140,33 @@ const r = await page.evaluate(async (extra) => {
   const COLOR = /#[0-9a-fA-F]{3,8}\b|rgba?\(/i;
   const strayColors = q('.slide [style]').filter((el) => !el.closest('svg') && COLOR.test(el.getAttribute('style')))
     .map((el) => (el.className || el.tagName) + ' | ' + el.getAttribute('style').match(COLOR)[0]);
+  // 中文与英文、数字之间留一个空格；正文句子不超过 60 字、一个分句不超过 40 字（只查正文，不查代码和图表）
+  const CJK = /[\u3400-\u4dbf\u4e00-\u9fff]/;
+  const LATIN = /[A-Za-z0-9]/;
+  const spacing = new Map(), longText = [];
+  const walk2 = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n; (n = walk2.nextNode());) {
+    const el = n.parentElement;
+    if (!el || el.closest('pre,code,svg,script,style')) continue;
+    const s = n.textContent, where = el.className || el.tagName;
+    for (let i = 1; i < s.length; i++) {
+      const a = s[i - 1], b = s[i];
+      if ((CJK.test(a) && LATIN.test(b)) || (LATIN.test(a) && CJK.test(b))) spacing.set(where + ' | ' + a + b, true);
+    }
+    s.split(/[。！？!?]+/).forEach((sent) => {
+      const t2 = sent.trim();
+      if (t2.length > 60) longText.push('句 ' + t2.length + ' 字：' + t2.slice(0, 14) + '…');
+      t2.split(/[，、；：,;]+/).forEach((cl) => {
+        if (cl.trim().length > 40) longText.push('分句 ' + cl.trim().length + ' 字：' + cl.trim().slice(0, 14) + '…');
+      });
+    });
+  }
   return {
     missing: [...miss.values()], checked, accepted,
     overflowN: overflow.length, overflow: overflow.slice(0, 8),
     fonts, fontErrors, slides: slides.length, pagenos, small: small.slice(0, 8), heights, designHeights,
     hiddenSlides, reducedMotion, placeholders, emptyLinks, staleRefs, dupIds, deadAnchors, strayColors,
+    cjkSpacing: [...spacing.keys()], longText: longText.slice(0, 8),
     templateSample: !!document.querySelector('meta[name="deck-template"]'),
   };
 }, extra);
@@ -183,6 +205,8 @@ line(r.dupIds.length ? 'FAIL' : 'PASS', 'dupIds', r.dupIds);
 line(r.deadAnchors.length ? 'FAIL' : 'PASS', 'deadAnchors', [...new Set(r.deadAnchors)]);
 line(hScroll.length ? 'FAIL' : 'PASS', 'hScroll', hScroll);
 line(r.strayColors.length ? 'WARN' : 'PASS', 'strayColors', r.strayColors.slice(0, 8));
+line(r.cjkSpacing.length ? 'WARN' : 'PASS', 'cjkSpacing', r.cjkSpacing.slice(0, 8));
+line(r.longText.length ? 'WARN' : 'PASS', 'longText', r.longText);
 line(r.templateSample ? 'WARN' : 'PASS', 'templateSample', r.templateSample);
 console.log(`[INFO] slides=${r.slides} glyphsChecked=${r.checked} heights=${r.heights.join(',')}${tall.length ? ' tall(>1400px)=' + tall.join(' ') : ''}`);
 console.log(`[INFO] designHeights=${r.designHeights.join(',')}（未缩放的设计稿像素；heights 是 1680 宽视口下按 0.875× 缩放后的值，与单页高度基线同一口径）`);
