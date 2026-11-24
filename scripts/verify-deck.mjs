@@ -129,14 +129,35 @@ const r = await page.evaluate(async (extra) => {
   const placeholders = slides.map((s, i) => ({ i: i + 1, m: s.outerHTML.match(PH) })).filter((x) => x.m)
     .map((x) => 'p' + x.i + ':' + x.m[0]);
   const emptyLinks = q('.slide a[href="#"]').length;
+  // 重复的 id：复制整页来加页时最常见，锚点链接会悄悄指到第一处
+  const idCount = new Map();
+  for (const el of q('[id]')) idCount.set(el.id, (idCount.get(el.id) || 0) + 1);
+  const dupIds = [...idCount].filter(([, c]) => c > 1).map(([id, c]) => id + '×' + c);
+  // 指不到任何元素的页内链接
+  const deadAnchors = q('a[href^="#"]').map((a) => a.getAttribute('href'))
+    .filter((h) => h.length > 1 && !document.getElementById(h.slice(1)));
+  // 散落的色值：颜色只走 :root 里的 token。图表内部（svg 里）由模板自己管，不查
+  const COLOR = /#[0-9a-fA-F]{3,8}\b|rgba?\(/i;
+  const strayColors = q('.slide [style]').filter((el) => !el.closest('svg') && COLOR.test(el.getAttribute('style')))
+    .map((el) => (el.className || el.tagName) + ' | ' + el.getAttribute('style').match(COLOR)[0]);
   return {
     missing: [...miss.values()], checked, accepted,
     overflowN: overflow.length, overflow: overflow.slice(0, 8),
     fonts, fontErrors, slides: slides.length, pagenos, small: small.slice(0, 8), heights, designHeights,
-    hiddenSlides, reducedMotion, placeholders, emptyLinks, staleRefs,
+    hiddenSlides, reducedMotion, placeholders, emptyLinks, staleRefs, dupIds, deadAnchors, strayColors,
     templateSample: !!document.querySelector('meta[name="deck-template"]'),
   };
 }, extra);
+
+// 窄屏和宽屏下都不该出现横向滚动条：出现就说明页面没有按视口宽缩放。量完把视口恢复成 1680。
+const hScroll = [];
+for (const w of [390, 1280, 2600]) {
+  await page.setViewportSize({ width: w, height: 945 });
+  await page.waitForTimeout(250);
+  const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  if (over > 1) hScroll.push(`${w}px 宽时多出 ${Math.round(over)}px`);
+}
+await page.setViewportSize({ width: 1680, height: 945 });
 
 // 页码连续性：N / M，M == 页数
 const pagenosOk = r.pagenos.length === r.slides && r.pagenos.every((t, i) => t === `${i + 1} / ${r.slides}`);
@@ -158,11 +179,16 @@ line(r.accepted.length ? 'WARN' : 'PASS', 'acceptedFallback', r.accepted.map((m)
 line(r.placeholders.length ? 'WARN' : 'PASS', 'placeholders', r.placeholders);
 line(r.emptyLinks ? 'WARN' : 'PASS', 'emptyLinks', r.emptyLinks);
 line(r.staleRefs.length ? 'WARN' : 'PASS', 'staleRefs', r.staleRefs);
+line(r.dupIds.length ? 'FAIL' : 'PASS', 'dupIds', r.dupIds);
+line(r.deadAnchors.length ? 'FAIL' : 'PASS', 'deadAnchors', [...new Set(r.deadAnchors)]);
+line(hScroll.length ? 'FAIL' : 'PASS', 'hScroll', hScroll);
+line(r.strayColors.length ? 'WARN' : 'PASS', 'strayColors', r.strayColors.slice(0, 8));
 line(r.templateSample ? 'WARN' : 'PASS', 'templateSample', r.templateSample);
 console.log(`[INFO] slides=${r.slides} glyphsChecked=${r.checked} heights=${r.heights.join(',')}${tall.length ? ' tall(>1400px)=' + tall.join(' ') : ''}`);
 console.log(`[INFO] designHeights=${r.designHeights.join(',')}（未缩放的设计稿像素；heights 是 1680 宽视口下按 0.875× 缩放后的值，与单页高度基线同一口径）`);
 if (r.missing.length) console.log('       缺字修法：改文案后重跑 refresh_cjk_subset.py；源字体确实没有的字符换写法，或写进 <meta name="fallback-ok" content="…"> 表示已人工接受回落');
-const fail = r.missing.length || r.overflowN || r.small.length || errs.length || !pagenosOk || !fontsOk || r.hiddenSlides.length || !r.reducedMotion;
+const fail = r.missing.length || r.overflowN || r.small.length || errs.length || !pagenosOk || !fontsOk || r.hiddenSlides.length
+  || !r.reducedMotion || r.dupIds.length || r.deadAnchors.length || hScroll.length;
 console.log(fail ? '验收：FAIL' : '验收：PASS');
 await browser.close();
 process.exit(fail ? 1 : 0);

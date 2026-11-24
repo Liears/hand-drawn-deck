@@ -26,10 +26,10 @@ git clone https://github.com/Liears/hand-drawn-deck.git ~/.claude/skills/hand-dr
 | 文件 | 内容 |
 |---|---|
 | `SKILL.md` | 工作流（结构草案先行 → 拼装 → 字体子集 → 两级验证 → 交付）、更新已有 deck 的流程、内容纪律、视觉规范、已知坑速查、自检清单 |
-| `assets/template.html` | 起手模板：八个页型各占一页，是"类名契约"的参考实现。字体文件不进仓库，所以在本目录直接打开它看到的不是手写体（页顶会有红色提示）；拷到 deck 目录并跑一次字体子集脚本之后才是 |
-| `assets/template-preview.png` | 模板渲染好的样子：八页拼成一张长图，小赖体 + Excalifont 已加载 |
+| `assets/template.html` | 起手模板：十个页型各占一页，是"类名契约"的参考实现。字体文件不进仓库，所以在本目录直接打开它看到的不是手写体（页顶会有红色提示）；拷到 deck 目录并跑一次字体子集脚本之后才是 |
+| `assets/template-preview.png` | 模板渲染好的样子：十页拼成一张长图，小赖体 + Excalifont 已加载 |
 | `scripts/refresh_cjk_subset.py` | 字体子集刷新：扫描 HTML 实际用到的非 ASCII 字符 → Xiaolai 子集化（22MB → 约 75KB）→ 生成 fonts.css 并同步 `?v=`，自带字形覆盖自检 |
-| `scripts/verify-deck.mjs` | 字符级探针：逐字符确认由自托管字体渲染，另查溢出、字号下限、页码连续、藏页、资源加载、占位符残留；退出码可用 |
+| `scripts/verify-deck.mjs` | 字符级探针：逐字符确认由自托管字体渲染，另查溢出、字号下限、页码连续、藏页、资源加载、占位符残留、重复 id、页内链接、三种宽度下的横向滚动；退出码可用 |
 | `scripts/shot-deck.mjs` | 布局级目检：逐页截图（自动点亮滚入动画），配合读图工具查"文字撕列"这类探针查不出的问题 |
 | `scripts/_browser.mjs` | 上面两个脚本共用：按平台定位 playwright 与 chromium，接受 URL 或本地路径 |
 | `references/pitfalls.md` | 故障手册：按症状索引的踩坑记录 |
@@ -41,7 +41,10 @@ git clone https://github.com/Liears/hand-drawn-deck.git ~/.claude/skills/hand-dr
 - 字号下限 20px；设计宽 1920 加 `fit()` 视口缩放（上限 1.3×）；滚动式，不翻页
 - 两级验证：探针查字符级，截图查布局级
 - 数字诚实性：同一数字全 deck 一致、口径必标、诚实结论优先于好看结论
+- 图表数据驱动：条宽、段宽、折线坐标由数字算出来，不手填；不做断轴、3D、渐变
 
 ## 来源
 
 2026-09-09 在 DeepAnalyze 编码能力汇报 deck 的实作中定型。踩坑记录见 `SKILL.md` 的"已知坑速查"和 `references/pitfalls.md`。
+
+图表部分的思路参考了 [Lieflat Charts](https://github.com/larashero3-dotcom/lieflat-charts)（PolyForm Noncommercial 许可）：数值与视觉成正比、断轴的替代方案、颜色不能是唯一线索、同一页元素指向同一口径等。只借鉴了思路，没有使用它的代码和文字。

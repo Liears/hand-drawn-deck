@@ -145,6 +145,38 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
 }
 .bar.base { border-color:var(--alt); border-radius:6px 4px 7px 5px; background:var(--hachure-alt), var(--paper); }
 
+/* ---- 构成：百分比堆叠条。每段的宽度就是它的占比（--v），合计必须是 100；主角实色，其余斜纹，不靠颜色也能分 ---- */
+.stack {
+  display:flex;
+  height:44px;
+  border:2px solid var(--ink);
+  border-radius:8px 11px 9px 10px / 10px 9px 11px 8px;
+  overflow:hidden;
+  background:var(--paper-2);
+}
+.stack > i { flex:var(--v); min-width:0; border-right:2px solid var(--paper-2); }
+.stack > i:last-child { border-right:none; }
+.sw { display:block; }
+.sw.a { background:var(--accent); }
+.sw.b { background:var(--hachure), var(--paper-2); }
+.sw.c { background:var(--hachure-alt), var(--paper-2); }
+.sw.d { background:var(--paper-3); }
+.legend { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px 28px; margin-top:22px; }
+.legend > div { display:flex; align-items:center; gap:14px; }
+.legend i.sw { width:32px; height:24px; border:1.5px solid var(--ink); border-radius:4px 6px 5px 7px; flex:none; }
+
+/* ---- 趋势：折线图由脚本按数据画出来，坐标不手填 ---- */
+.chart-line svg { display:block; width:100%; height:auto; }
+.chart-line .plot { fill:var(--paper-2); }
+.chart-line .grid { stroke:var(--ink-35); stroke-width:1.5; stroke-dasharray:8 10; }
+.chart-line .axis { stroke:var(--ink); stroke-width:2.5; stroke-linecap:round; }
+.chart-line .line { fill:none; stroke:var(--ink); stroke-width:4.5; stroke-linejoin:round; stroke-linecap:round; }
+.chart-line .dot { fill:var(--paper-2); stroke:var(--ink); stroke-width:3; }
+.chart-line .mark { stroke:var(--accent); stroke-width:2.5; stroke-dasharray:10 10; }
+.chart-line text { font-family:var(--font-hand); font-size:var(--fs-label); fill:var(--muted); }
+.chart-line text.val { font-size:var(--fs-h3); fill:var(--ink); }
+.chart-line text.mark-text { fill:var(--accent); }
+
 /* ---- 代码窗（VSCode Dark+）---- */
 .codewin {
   border-radius:10px 8px 10px 9px / 9px 10px 8px 10px;
@@ -230,8 +262,8 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
       </div>
     </div>
   </div>
-  <div class="anno rv">结论：退避加抖动之后，下游压力没有随重试上升；代价是失败请求的耗时多了一个退避周期。要拍板的事见<a href="#next">第 8 页</a>。</div>
-  <div class="pageno">1 / 8</div>
+  <div class="anno rv">结论：退避加抖动之后，下游压力没有随重试上升；代价是失败请求的耗时多了一个退避周期。要拍板的事见<a href="#next">第 10 页</a>。</div>
+  <div class="pageno">1 / 10</div>
 </section>
 
 <!-- ========== 页型 2 · 读数行：t-readout + 口径。数字与单位用 &nbsp; 焊死；每行不超过 18 个汉字，超了主动 <br> ========== -->
@@ -260,7 +292,7 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
     </div>
   </div>
   <div class="anno rv">口径：以上四项均取自上线后 28 天的网关日志，按首次请求聚合，时间窗与首页一致。</div>
-  <div class="pageno">2 / 8</div>
+  <div class="pageno">2 / 10</div>
 </section>
 
 <!-- ========== 页型 3 · A/B 对比：主推项 hachure 卡，对照项素色卡；对比条线型 + 色相双重区分 ========== -->
@@ -295,10 +327,24 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
       <div class="bar" style="--v:1.6;--max:2.4"></div>
     </div>
   </div>
-  <div class="pageno">3 / 8</div>
+  <div class="pageno">3 / 10</div>
 </section>
 
-<!-- ========== 页型 4 · 代码窗：每窗不超过 22 行，只用 ASCII（JBM 子集只有 ASCII），< > { } 写成转义 ========== -->
+<!-- ========== 页型 4 · 趋势：折线图由数据画出来，坐标不手填。数值只标在起点、终点、最高、最低四个点上；data-mark 标事件。时间间隔不等的数不要用它画 ========== -->
+<section class="slide" id="trend">
+  <header class="rv"><h2 class="t-title">上线当天 P95 从 419ms 降到 236ms，一周后稳定在 180ms 上下</h2></header>
+  <div class="card rv">
+    <div class="t-label">P95 延迟 · 按日 · 单位 ms · 来源见下</div>
+    <div class="chart-line" data-unit="ms" data-title="P95 延迟按日走势" data-mark="11-10" data-mark-text="上线"
+      data-labels="11-01,11-02,11-03,11-04,11-05,11-06,11-07,11-08,11-09,11-10,11-11,11-12,11-13,11-14,11-15,11-16,11-17,11-18,11-19,11-20,11-21,11-22,11-23,11-24,11-25,11-26,11-27,11-28"
+      data-values="428,415,432,421,440,417,426,435,419,236,188,179,191,175,183,169,186,178,181,174,188,176,180,172,184,179,177,180"></div>
+    <p class="t-micro">来源：网关日志，11 月 1 日至 28 日，与首页是同一批数据。11-10 当天混有上线前后的流量。</p>
+  </div>
+  <div class="anno rv">读法：纵轴从 100ms 起、不从零起，所以线看着陡；四个关键点标的是真实数值。</div>
+  <div class="pageno">4 / 10</div>
+</section>
+
+<!-- ========== 页型 5 · 代码窗：每窗不超过 22 行，只用 ASCII（JBM 子集只有 ASCII），< > { } 写成转义 ========== -->
 <section class="slide">
   <header class="rv"><h2 class="t-title">改动集中在重试函数的十几行里</h2></header>
   <div class="grid2">
@@ -320,10 +366,10 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
       <p class="t-mono-md" style="margin-top:auto;padding-top:16px">retry.py  +38 -12</p>
     </div>
   </div>
-  <div class="pageno">4 / 8</div>
+  <div class="pageno">5 / 10</div>
 </section>
 
-<!-- ========== 页型 5 · 简表：格子都是短语时才用 dtable。段落、链接多的账目改用页型 6。两列表把 data-cols 改成 "2" ========== -->
+<!-- ========== 页型 6 · 简表：格子都是短语时才用 dtable。段落、链接多的账目改用页型 7。两列表把 data-cols 改成 "2" ========== -->
 <section class="slide">
   <header class="rv"><h2 class="t-title">三个层的改动与各自影响</h2></header>
   <div class="card rv">
@@ -335,10 +381,10 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
     </div>
   </div>
   <div class="anno rv">口径：「影响」一列取上线后 28 天的网关日志，与首页是同一批数据。</div>
-  <div class="pageno">5 / 8</div>
+  <div class="pageno">6 / 10</div>
 </section>
 
-<!-- ========== 页型 6 · 账目卡阵：N 层 × 属性的账目用均质卡。每卡固定四槽：① 徽标行 ② 正文 ③ 票号链接 ④ 处置；③④ 沉底对齐。示例里的票号链接是 href="#" 占位，要换成真实地址 ========== -->
+<!-- ========== 页型 7 · 账目卡阵：N 层 × 属性的账目用均质卡。每卡固定四槽：① 徽标行 ② 正文 ③ 票号链接 ④ 处置；③④ 沉底对齐。示例里的票号链接是 href="#" 占位，要换成真实地址 ========== -->
 <section class="slide" id="ledger">
   <header class="rv"><h2 class="t-title">审计发现的六个问题，各自落在哪一层</h2></header>
   <div class="grid3">
@@ -398,7 +444,7 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
       </div>
       <p class="t-body" style="margin-top:12px">写接口重试会重复落库。</p>
       <div style="margin-top:auto;padding-top:12px">
-        <p class="t-micro">票号：<a href="#">AUD-11</a> · <a href="#idempotency">详见第 7 页</a></p>
+        <p class="t-micro">票号：<a href="#">AUD-11</a> · <a href="#idempotency">详见第 8 页</a></p>
         <p class="t-micro">处置：业务层 · 未排期</p>
       </div>
     </div>
@@ -415,10 +461,10 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
       </div>
     </div>
   </div>
-  <div class="pageno">6 / 8</div>
+  <div class="pageno">7 / 10</div>
 </section>
 
-<!-- ========== 页型 7 · 单点展开：把一个问题单独讲透。左边讲发生了什么、为什么，右边一张"项 / 内容"两列表放范围、修法、工作量 ========== -->
+<!-- ========== 页型 8 · 单点展开：把一个问题单独讲透。左边讲发生了什么、为什么，右边一张"项 / 内容"两列表放范围、修法、工作量 ========== -->
 <section class="slide" id="idempotency">
   <header class="rv"><h2 class="t-title">写接口重试会重复落库，三个接口受影响</h2></header>
   <div class="card rv">
@@ -438,11 +484,30 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
       </div>
     </div>
   </div>
-  <div class="anno rv">对应<a href="#ledger">第 6 页</a>第 05 项，票号 <a href="#">AUD-11</a>。工作量是粗估，没有实测。</div>
-  <div class="pageno">7 / 8</div>
+  <div class="anno rv">对应<a href="#ledger">第 7 页</a>第 05 项，票号 <a href="#">AUD-11</a>。工作量是粗估，没有实测。</div>
+  <div class="pageno">8 / 10</div>
 </section>
 
-<!-- ========== 页型 8 · 尾页：收在要拍板的事和下一步，不写"谢谢 / 欢迎交流" ========== -->
+<!-- ========== 页型 9 · 构成：百分比堆叠条。段宽就是占比（--v），合计必须是 100；主角用实色，其余用斜纹 ========== -->
+<section class="slide" id="mix">
+  <header class="rv"><h2 class="t-title">下游错误里六成三是 5xx，超时只占两成</h2></header>
+  <div class="card rv">
+    <div class="t-label">下游错误构成 · 按错误类型 · 占全部下游错误的比例</div>
+    <div class="stack">
+      <i class="sw a" style="--v:63"></i><i class="sw b" style="--v:22"></i><i class="sw c" style="--v:15"></i>
+    </div>
+    <div class="legend">
+      <div><i class="sw a"></i><span class="t-body">5xx&nbsp;63%</span></div>
+      <div><i class="sw b"></i><span class="t-body">超时&nbsp;22%</span></div>
+      <div><i class="sw c"></i><span class="t-body">连接重置&nbsp;15%</span></div>
+    </div>
+    <p class="t-micro" style="margin-top:22px">来源：网关日志，上线后 28 天，n=1.9×10⁵ 次下游错误。三项合计 100%。</p>
+  </div>
+  <div class="anno rv">结论：先修 5xx。它比另外两项加起来还多。</div>
+  <div class="pageno">9 / 10</div>
+</section>
+
+<!-- ========== 页型 10 · 尾页：收在要拍板的事和下一步，不写"谢谢 / 欢迎交流" ========== -->
 <section class="slide" id="next">
   <header class="rv"><h2 class="t-title">还需要拍板两件事，其余已排期</h2></header>
   <div class="card rv" style="display:flex;flex-direction:column;gap:18px">
@@ -466,13 +531,13 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
       <span class="badge solid">03</span>
       <div style="flex:1;min-width:0">
         <h3 class="t-h3">错误码分型评审</h3>
-        <p class="t-body">本周四评审，结论<a href="#ledger">回写到第 6 页</a>。</p>
+        <p class="t-body">本周四评审，结论<a href="#ledger">回写到第 7 页</a>。</p>
       </div>
       <span class="badge warn">已排期</span>
     </div>
   </div>
   <div class="anno rv">数据口径：失败率与延迟均来自上线前后各 28 天的网关日志，n=1.2×10⁷。</div>
-  <div class="pageno">8 / 8</div>
+  <div class="pageno">10 / 10</div>
 </section>
 
 </div>
@@ -528,6 +593,84 @@ a { color:var(--accent); text-decoration:underline; text-decoration-thickness:1.
     };
     if (document.readyState === 'complete') poll(20); else window.addEventListener('load', function () { poll(20); });
   }
+
+  // 折线图：坐标全部由数据算出来。y 轴线性映射，x 轴按点的先后等距——时间间隔不等的数不要用它画。
+  // 数值只标四个关键点：首尾两点的数值写在图的外侧，中间的最高点标在上方、最低点标在下方。
+  function drawLine(el) {
+    var labels = (el.getAttribute('data-labels') || '').split(',');
+    var values = (el.getAttribute('data-values') || '').split(',').map(Number);
+    var n = values.length, unit = el.getAttribute('data-unit') || '';
+    if (n < 2 || labels.length !== n) return;
+    var W = el.clientWidth || 1600, H = 440;
+    var padL = 170, padR = 130, padT = 48, padB = 54;             // 左边放刻度和起点的数值，右边放终点的数值
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var lo = Math.min.apply(null, values), hi = Math.max.apply(null, values);
+    var iLo = values.indexOf(lo), iHi = values.indexOf(hi);
+    // 纵轴范围取整到好读的刻度（步长从 1、2、2.5、5、10 这一档里挑），上下各留约 15% 给标签
+    var raw = (hi - lo) * 1.3 / 4 || 1, pw = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), dd = raw / pw;
+    var tick = (dd <= 1 ? 1 : dd <= 2 ? 2 : dd <= 2.5 ? 2.5 : dd <= 5 ? 5 : 10) * pw;
+    var pad = (hi - lo) * 0.15;
+    var y0 = Math.floor((lo - pad) / tick) * tick, y1 = Math.ceil((hi + pad) / tick) * tick;
+    if (y0 === y1) { y0 -= tick; y1 += tick; }
+    // 数据都为正、贴着零、而且最低点在两头时，纵轴从零起。最低点在中间时它的标签要放在下方，得留出地方，所以不这样做。
+    if (lo >= 0 && (iLo === 0 || iLo === n - 1) && lo - pad <= 0) y0 = 0;
+    var guard = 0;
+    while (iLo > 0 && iLo < n - 1 && (lo - y0) / (y1 - y0) * plotH < 56 && guard++ < 4) y0 -= tick;
+    guard = 0;
+    while ((y1 - hi) / (y1 - y0) * plotH < 44 && guard++ < 4) y1 += tick;
+    var ticks = Math.round((y1 - y0) / tick);
+    var X = function (i) { return padL + i * plotW / (n - 1); };
+    var Y = function (v) { return padT + (y1 - v) * plotH / (y1 - y0); };
+    var r = function (v) { return Math.round(v * 10) / 10; };
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="'
+      + (el.getAttribute('data-title') || '') + '">';
+    var pat = 'hatch-' + (drawLine.seq = (drawLine.seq || 0) + 1);
+    s += '<defs><pattern id="' + pat + '" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+      + '<line x1="0" y1="0" x2="0" y2="12" stroke="rgba(43,36,24,.16)" stroke-width="2"/></pattern></defs>';
+    s += '<rect class="plot" x="' + padL + '" y="' + padT + '" width="' + plotW + '" height="' + plotH + '"/>';   // 绘图区垫素底，和卡片的斜纹分开
+    var i, v;
+    for (i = 0; i <= ticks; i++) {                                 // 横向网格和纵轴刻度
+      v = y0 + tick * i;
+      s += '<line class="grid" x1="' + padL + '" y1="' + r(Y(v)) + '" x2="' + (W - padR) + '" y2="' + r(Y(v)) + '"/>'
+        + '<text x="12" y="' + r(Y(v) + 7) + '">' + Math.round(v * 100) / 100 + '</text>';
+    }
+    s += '<line class="axis" x1="' + padL + '" y1="' + (padT - 14) + '" x2="' + padL + '" y2="' + (H - padB) + '"/>'
+      + '<line class="axis" x1="' + padL + '" y1="' + (H - padB) + '" x2="' + (W - padR + 20) + '" y2="' + (H - padB) + '"/>';
+    var step = Math.max(1, Math.ceil(n * 120 / plotW));             // 横轴标签太密就隔几个标一个
+    for (i = 0; i < n; i += step) {
+      s += '<text x="' + r(X(i)) + '" y="' + (H - 16) + '" text-anchor="middle">' + labels[i] + '</text>';
+    }
+    if ((n - 1) % step >= Math.ceil(step / 2)) {
+      s += '<text x="' + r(X(n - 1)) + '" y="' + (H - 16) + '" text-anchor="end">' + labels[n - 1] + '</text>';
+    }
+    var pts = '', area = '';
+    for (i = 0; i < n; i++) {
+      pts += (i ? ' ' : '') + r(X(i)) + ',' + r(Y(values[i]));
+      area += (i ? ' L' : 'M') + r(X(i)) + ' ' + r(Y(values[i]));
+    }
+    s += '<path d="' + area + ' L' + r(X(n - 1)) + ' ' + (H - padB) + ' L' + padL + ' ' + (H - padB) + ' Z" fill="url(#' + pat + ')"/>';
+    var mk = el.getAttribute('data-mark'), m = mk ? labels.indexOf(mk) : -1;
+    if (m >= 0) {
+      s += '<line class="mark" x1="' + r(X(m)) + '" y1="' + (padT - 14) + '" x2="' + r(X(m)) + '" y2="' + (H - padB) + '"/>'
+        + '<text class="mark-text" x="' + r(Math.min(Math.max(X(m), padL + 50), W - padR - 50)) + '" y="' + (padT - 24)
+        + '" text-anchor="middle">' + (el.getAttribute('data-mark-text') || labels[m]) + '</text>';
+    }
+    s += '<polyline class="line" points="' + pts + '"/>';
+    for (i = 0; i < n; i++) s += '<circle class="dot" cx="' + r(X(i)) + '" cy="' + r(Y(values[i])) + '" r="7"/>';
+    [0, n - 1, iLo, iHi].filter(function (k, idx, a) { return a.indexOf(k) === idx; }).sort(function (a, b) { return a - b; })
+      .forEach(function (k) {
+        var x, y, anchor;
+        var edgeY = function (v) { return Math.min(Math.max(Y(v) + 9, padT + 22), H - padB - 12); };   // 点贴着上下边时，数值不骑在轴线上
+        if (k === 0) { x = padL - 18; y = edgeY(values[0]); anchor = 'end'; }
+        else if (k === n - 1) { x = X(k) + 18; y = edgeY(values[k]); anchor = 'start'; }
+        else if (k === iHi) { x = X(k); y = Y(values[k]) - 22; anchor = 'middle'; }
+        else { x = X(k); y = Y(values[k]) + 44; anchor = 'middle'; }
+        s += '<text class="val" x="' + r(x) + '" y="' + r(y) + '" text-anchor="' + anchor + '">' + values[k] + unit + '</text>';
+      });
+    s += '</svg>';
+    el.innerHTML = s;
+  }
+  document.querySelectorAll('.chart-line').forEach(drawLine);
 
   // 滚入动画：页进入视口 12% 即点亮并停止观察（只动一次）
   if ('IntersectionObserver' in window) {
