@@ -29,7 +29,7 @@ git clone https://github.com/Liears/hand-drawn-deck.git ~/.claude/skills/hand-dr
 | `assets/template.html` | 起手模板：十一个页型各占一页，是"类名契约"的参考实现。字体文件不进仓库，所以在本目录直接打开它看到的不是手写体（页顶会有红色提示）；拷到 deck 目录并跑一次字体子集脚本之后才是 |
 | `assets/template-preview.png` | 模板渲染好的样子：十一页拼成一张长图，小赖体 + Excalifont 已加载 |
 | `scripts/refresh_cjk_subset.py` | 字体子集刷新：扫描 HTML 实际用到的非 ASCII 字符 → Xiaolai 子集化（22MB → 约 75KB）→ 生成 fonts.css 并同步 `?v=`，自带字形覆盖自检 |
-| `scripts/verify-deck.mjs` | 字符级探针：逐字符确认由自托管字体渲染，另查溢出、字号下限、页码连续、藏页、资源加载、占位符残留、重复 id、页内链接、三种宽度下的横向滚动、中英文间距、超长句；退出码可用 |
+| `scripts/verify-deck.mjs` | 字符级探针：逐字符确认由自托管字体渲染，另查溢出、字号下限、页码连续、藏页、资源加载、占位符残留、重复 id、页内链接、三种宽度下的横向滚动、中英文间距、超长句、未定义的类名、文字重叠、内部词泄漏、连续三页同一版式、卡片底部空置；退出码可用 |
 | `scripts/shot-deck.mjs` | 布局级目检：逐页截图（自动点亮滚入动画），配合读图工具查"文字撕列"这类探针查不出的问题 |
 | `scripts/_browser.mjs` | 上面两个脚本共用：按平台定位 playwright 与 chromium，接受 URL 或本地路径 |
 | `references/pitfalls.md` | 故障手册：按症状索引的踩坑记录 |
@@ -43,6 +43,7 @@ git clone https://github.com/Liears/hand-drawn-deck.git ~/.claude/skills/hand-dr
 - 配色：墨线加羊皮纸底，强调色是批注蓝，语义色（绿 / 琥珀 / 红）单独一套
 - 文本纪律：中英文之间留空格、单句不超过 40 字、段落不超过 7 行、删掉空话和硬凑的三点
 - 示意图：线性链路用 `.flow`，实线是主流程、虚线是次要或异步，只画有依据的关系
+- 每页说得出它支撑哪条结论；标题连读应是一条论证链；过程词（文件名、路径、Option A/B）不上页面
 - 数字诚实性：同一数字全 deck 一致、口径必标、诚实结论优先于好看结论
 - 图表数据驱动：条宽、段宽、折线坐标由数字算出来，不手填；不做断轴、3D、渐变
 
@@ -62,3 +63,4 @@ git clone https://github.com/Liears/hand-drawn-deck.git ~/.claude/skills/hand-dr
 - [excalidraw-diagram-skill](https://github.com/coleam00/excalidraw-diagram-skill)、[hand-drawn-diagrams](https://github.com/muthuishere/hand-drawn-diagrams)（MIT）、[sketchy](https://github.com/ddkbs/sketchy)（MIT）：同构测试、按关系选形态、箭头不穿节点、容器默认不用
 - [chart.xkcd](https://github.com/timqian/chart.xkcd)（MIT）：折线图的手绘位移滤镜（feTurbulence + feDisplacementMap，文字不进滤镜）
 - [rough.js](https://github.com/rough-stuff/rough)（MIT）：手绘线条的双笔抖动、不闭合椭圆、斜纹填充的做法，参考了原理，没有内嵌它的代码
+- [frontend-slides](https://github.com/zarazhangrui/frontend-slides)（MIT）、[ppt-report-skills](https://github.com/myunwang/ppt-report-skills)（MIT）、[guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill)（AGPL，仅思路）、[presentation-creator](https://github.com/mblode/agent-skills)（MIT）、[html-progress-report](https://github.com/7HHHHH/html-progress-report-skill)（MIT）、[visual-explainer](https://github.com/nicobailon/visual-explainer)（MIT）、[huashu-design](https://github.com/alchaincyf/huashu-design)（MIT）：过程词不上页面、每页支撑一条结论、标题连读成论证链、类名预检、文字重叠检查、版式轮换指标、一轮只改三处、数据截止日期

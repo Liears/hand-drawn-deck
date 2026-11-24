@@ -161,8 +161,95 @@ const r = await page.evaluate(async (extra) => {
       });
     });
   }
+  // 用了但 <style> 里没定义的类：拼错或发明的类名会静默失效
+  const defined = new Set();
+  for (const ss of document.styleSheets) {
+    try {
+      for (const rule of ss.cssRules) {
+        const sel = rule.selectorText || '';
+        sel.replace(/\.([A-Za-z_][\w-]*)/g, function (m2, c2) { defined.add(c2); return m2; });
+      }
+    } catch { /* 跨域样式表读不到，跳过 */ }
+  }
+  const used = new Set();
+  for (const el of q('[class]')) {
+    if (!el.closest('.deck')) continue;
+    for (const c2 of el.classList) used.add(c2);
+  }
+  const undefinedClasses = [...used].filter((c2) => !defined.has(c2)).sort();
+  // 文字互相压住：scrollHeight 查不出遮挡，这里按元素矩形相交判断
+  const textOverlap = [];
+  const leaves = q('.slide *').filter((el) => {
+    if (el.children.length || el.closest('.pageno') || !(el.textContent || '').trim()) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 2 && r.height > 2;
+  });
+  for (let i = 0; i < leaves.length; i++) {
+    for (let j = i + 1; j < leaves.length; j++) {
+      const A = leaves[i], B = leaves[j];
+      if (A.contains(B) || B.contains(A)) continue;
+      const a = A.getBoundingClientRect(), b = B.getBoundingClientRect();
+      const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (w > 4 && h > 4 && w * h > 0.25 * Math.min(a.width * a.height, b.width * b.height)) {
+        textOverlap.push((A.className || A.tagName) + ' × ' + (B.className || B.tagName) + ' | ' + (A.textContent || '').trim().slice(0, 10));
+      }
+    }
+  }
+  // 过程词泄漏：内部文件名、路径、本地地址、Option A/B 这类词不该出现在页面上（代码窗除外）
+  const internalWords = [];
+  const walk3 = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const IW = /(localhost|127\.0\.0\.1|file:\/\/|[A-Za-z]:[\/]|\/tmp\/|index\.html|template\.html|Option\s+[A-D]\b)/;
+  for (let n; (n = walk3.nextNode());) {
+    const el = n.parentElement;
+    if (!el || el.closest('pre,code,svg,script,style')) continue;
+    const m2 = n.textContent.match(IW);
+    if (m2) internalWords.push((el.className || el.tagName) + ' | ' + m2[0]);
+  }
+  // 版式序列：按页面里出现的组件粗略判断，查"连续三页同一个版式"
+  const layoutOf = (s2) => {
+    if (s2.querySelector('.codewin')) return '代码窗';
+    if (s2.querySelector('.chart-line')) return '趋势';
+    if (s2.querySelector('.stack')) return '构成';
+    if (s2.querySelector('.flow')) return '链路';
+    if (s2.querySelector('.dtable')) return '简表';
+    if (s2.querySelectorAll('.grid4 .card').length >= 3) return '读数行';
+    if (s2.querySelectorAll('.grid3 .subcard').length >= 4) return '卡阵';
+    if (s2.querySelector('.t-stat, .t-readout')) return '读数';
+    if (s2.querySelectorAll('.inset').length >= 2) return '清单';
+    if (s2.querySelectorAll('.card, .subcard').length >= 2) return '多卡';
+    return '文字';
+  };
+  const layouts = slides.map(layoutOf);
+  let run = 1, layoutRun = 1;
+  for (let i = 1; i < layouts.length; i++) {
+    run = layouts[i] === layouts[i - 1] ? run + 1 : 1;
+    if (run > layoutRun) layoutRun = run;
+  }
+  // 卡片内部底部留白：grid 把卡拉到等高之后，内容早早结束的卡会露一大块空白
+  const cardGap = [];
+  for (const card of q('.slide .card, .slide .subcard')) {
+    const box = card.getBoundingClientRect();
+    if (box.height < 80) continue;
+    const scale = box.width / card.offsetWidth || 1;
+    const padB = parseFloat(getComputedStyle(card).paddingBottom) * scale;
+    let bottom = 0;
+    for (const el of card.querySelectorAll('*')) {
+      if (!el.getClientRects().length) continue;
+      const r2 = el.getBoundingClientRect();
+      if (r2.width && r2.height) bottom = Math.max(bottom, r2.bottom);
+    }
+    const gap = box.bottom - padB - bottom;
+    if (gap / box.height > 0.35) cardGap.push((card.className || card.tagName) + ' | 底部空 ' + Math.round(gap / box.height * 100) + '%');
+  }
+  const titles = slides.map((s2) => {
+    const h = s2.querySelector('.t-title') || s2.querySelector('h1,h2');
+    return h ? h.textContent.trim() : '(无标题)';
+  });
   return {
     missing: [...miss.values()], checked, accepted,
+    undefinedClasses, textOverlap: [...new Set(textOverlap)].slice(0, 6), internalWords: [...new Set(internalWords)].slice(0, 6),
+    layouts, layoutRun, cardGap: cardGap.slice(0, 6), titles,
     overflowN: overflow.length, overflow: overflow.slice(0, 8),
     fonts, fontErrors, slides: slides.length, pagenos, small: small.slice(0, 8), heights, designHeights,
     hiddenSlides, reducedMotion, placeholders, emptyLinks, staleRefs, dupIds, deadAnchors, strayColors,
@@ -207,9 +294,16 @@ line(hScroll.length ? 'FAIL' : 'PASS', 'hScroll', hScroll);
 line(r.strayColors.length ? 'WARN' : 'PASS', 'strayColors', r.strayColors.slice(0, 8));
 line(r.cjkSpacing.length ? 'WARN' : 'PASS', 'cjkSpacing', r.cjkSpacing.slice(0, 8));
 line(r.longText.length ? 'WARN' : 'PASS', 'longText', r.longText);
+line(r.undefinedClasses.length ? 'WARN' : 'PASS', 'undefinedClasses', r.undefinedClasses.slice(0, 10));
+line(r.textOverlap.length ? 'WARN' : 'PASS', 'textOverlap', r.textOverlap);
+line(r.internalWords.length ? 'WARN' : 'PASS', 'internalWords', r.internalWords);
+line(r.layoutRun >= 3 ? 'WARN' : 'PASS', 'layoutRun', r.layoutRun);
+line(r.cardGap.length ? 'WARN' : 'PASS', 'cardGap', r.cardGap);
 line(r.templateSample ? 'WARN' : 'PASS', 'templateSample', r.templateSample);
 console.log(`[INFO] slides=${r.slides} glyphsChecked=${r.checked} heights=${r.heights.join(',')}${tall.length ? ' tall(>1400px)=' + tall.join(' ') : ''}`);
 console.log(`[INFO] designHeights=${r.designHeights.join(',')}（未缩放的设计稿像素；heights 是 1680 宽视口下按 0.875× 缩放后的值，与单页高度基线同一口径）`);
+console.log(`[INFO] layouts=${r.layouts.join(' > ')}`);
+console.log(`[INFO] titles=${JSON.stringify(r.titles)}`);
 if (r.missing.length) console.log('       缺字修法：改文案后重跑 refresh_cjk_subset.py；源字体确实没有的字符换写法，或写进 <meta name="fallback-ok" content="…"> 表示已人工接受回落');
 const fail = r.missing.length || r.overflowN || r.small.length || errs.length || !pagenosOk || !fontsOk || r.hiddenSlides.length
   || !r.reducedMotion || r.dupIds.length || r.deadAnchors.length || hScroll.length;
