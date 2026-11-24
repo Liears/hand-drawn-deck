@@ -167,8 +167,8 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 .stack > i:last-child { border-right:none; }
 .sw { display:block; }
 .sw.a { background:var(--accent); }
-.sw.b { background:var(--hachure), var(--paper-2); }
-.sw.c { background:var(--hachure-alt), var(--paper-2); }
+.sw.b { background:var(--hachure-alt), var(--paper-2); }
+.sw.c { background:var(--paper-3); }
 .sw.d { background:var(--paper-3); }
 .legend { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px 28px; margin-top:22px; }
 .legend > div { display:flex; align-items:center; gap:14px; }
@@ -265,8 +265,9 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 <div class="stage" id="stage">
 <div class="deck" id="deck">
 
-<!-- ========== 页型 1 · 结论首屏：标题写结论（不写主题词）；每个大数字旁标口径 ========== -->
-<section class="slide">
+<!-- ========== 页型 1 · 结论首屏：标题写结论（不写主题词）；每个大数字旁标口径。
+     示例只演示格式——真实的性能数字还要写清机器和版本、负载、测量方法、时间窗 ========== -->
+<section class="slide" data-sample>
   <header class="rv" style="display:flex;align-items:center;gap:20px">
     <h1 class="t-title">重试层上线后，接口失败率从 3.1% 降到 0.4%</h1>
     <span class="badge good" style="margin-left:auto">已全量</span>
@@ -295,7 +296,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 </section>
 
 <!-- ========== 页型 2 · 读数行：t-readout + 口径。数字与单位用 &nbsp; 焊死；每行不超过 18 个汉字，超了主动 <br> ========== -->
-<section class="slide">
+<section class="slide" data-sample>
   <header class="rv"><h2 class="t-title">重试请求的耗时主要花在等待，不在计算</h2></header>
   <div class="grid4">
     <div class="card rv">
@@ -311,7 +312,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
     <div class="card rv">
       <div class="t-label">重试后成功</div>
       <div class="t-readout">71%</div>
-      <p class="t-micro">n=420&nbsp;万<br>其余 29% 用尽次数</p>
+      <p class="t-micro">n=216&nbsp;万<br>其余 29% 用尽次数</p>
     </div>
     <div class="card rv">
       <div class="t-label">下游错误中 5xx 占比</div>
@@ -319,12 +320,12 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
       <p class="t-micro">其余为超时与连接重置</p>
     </div>
   </div>
-  <div class="anno rv">口径：以上四项均取自上线后 28 天的网关日志，按首次请求聚合，时间窗与首页一致。</div>
+  <div class="anno rv">口径：以上四项均取自上线后 28 天的网关日志，按首次请求聚合。</div>
   <div class="pageno">2 / 11</div>
 </section>
 
 <!-- ========== 页型 3 · A/B 对比：主推项 hachure 卡，对照项素色卡；对比条线型 + 色相双重区分 ========== -->
-<section class="slide">
+<section class="slide" data-sample>
   <header class="rv"><h2 class="t-title">上线方案在同等成本下把 P95 延迟压得更低</h2></header>
   <div class="grid2">
     <div class="card rv">
@@ -359,7 +360,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 </section>
 
 <!-- ========== 页型 4 · 趋势：折线图由数据画出来，坐标不手填。数值只标在起点、终点、最高、最低四个点上；data-mark 标事件。时间间隔不等的数不要用它画 ========== -->
-<section class="slide" id="trend">
+<section class="slide" id="trend" data-sample>
   <header class="rv"><h2 class="t-title">上线当天 P95 从 419ms 降到 236ms，一周后稳定在 180ms 上下</h2></header>
   <div class="card rv">
     <div class="t-label">P95 延迟，按日统计，单位是 ms</div>
@@ -374,7 +375,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 
 <!-- ========== 页型 5 · 链路：请求经过哪几跳。节点用 .node，连线用 .link（加 dashed 表示次要或异步），箭头上的标签说明关系。
      只画材料里有依据的调用关系，不画推测的依赖 ========== -->
-<section class="slide" id="path">
+<section class="slide" id="path" data-sample>
   <header class="rv"><h2 class="t-title">一个请求要过四跳，重试发生在第三跳</h2></header>
   <div class="card rv">
     <div class="flow">
@@ -392,7 +393,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 </section>
 
 <!-- ========== 页型 6 · 代码窗：每窗不超过 22 行，只用 ASCII（JBM 子集只有 ASCII），< > { } 写成转义 ========== -->
-<section class="slide">
+<section class="slide" data-sample>
   <header class="rv"><h2 class="t-title">改动集中在重试函数的十几行里</h2></header>
   <div class="grid2">
     <div class="codewin rv">
@@ -417,7 +418,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 </section>
 
 <!-- ========== 页型 7 · 简表：格子都是短语时才用 dtable。段落、链接多的账目改用页型 8。两列表把 data-cols 改成 "2" ========== -->
-<section class="slide">
+<section class="slide" data-sample>
   <header class="rv"><h2 class="t-title">三个层的改动与各自影响</h2></header>
   <div class="card rv">
     <div class="dtable" data-cols="3">
@@ -432,7 +433,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 </section>
 
 <!-- ========== 页型 8 · 账目卡阵：N 层 × 属性的账目用均质卡。每卡固定四槽：① 徽标行 ② 正文 ③ 票号链接 ④ 处置；③④ 沉底对齐。示例里的票号链接是 href="#" 占位，要换成真实地址 ========== -->
-<section class="slide" id="ledger">
+<section class="slide" id="ledger" data-sample>
   <header class="rv"><h2 class="t-title">审计发现的六个问题，各自落在哪一层</h2></header>
   <div class="grid3">
     <div class="subcard rv" style="display:flex;flex-direction:column">
@@ -512,7 +513,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 </section>
 
 <!-- ========== 页型 9 · 单点展开：把一个问题单独讲透。左边讲发生了什么、为什么，右边一张"项 / 内容"两列表放范围、修法、工作量 ========== -->
-<section class="slide" id="idempotency">
+<section class="slide" id="idempotency" data-sample>
   <header class="rv"><h2 class="t-title">写接口重试会重复落库，三个接口受影响</h2></header>
   <div class="card rv">
     <div class="grid2">
@@ -521,6 +522,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
         <p class="t-body" style="margin-top:10px">下单、改地址、退款三个写接口没有幂等键。客户端超时重试时，同一次请求会落两条记录。</p>
         <h3 class="t-h3" style="margin-top:20px">为什么会这样</h3>
         <p class="t-body" style="margin-top:10px">重试层把写请求和读请求同等对待，没有区分。</p>
+      <p class="t-body" style="margin-top:10px">影响面：所有重试过的写请求，最坏情况同一次下单落两条记录。</p>
       </div>
       <div class="dtable" data-cols="2">
         <div class="th"><div>项</div></div><div class="th"><div>内容</div></div>
@@ -536,7 +538,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 </section>
 
 <!-- ========== 页型 10 · 构成：百分比堆叠条。段宽就是占比（--v），合计必须是 100；主角用实色，其余用斜纹 ========== -->
-<section class="slide" id="mix">
+<section class="slide" id="mix" data-sample>
   <header class="rv"><h2 class="t-title">下游错误里六成三是 5xx，超时只占两成</h2></header>
   <div class="card rv">
     <div class="t-label">下游错误构成：按错误类型分，占全部下游错误的比例</div>
@@ -555,7 +557,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 </section>
 
 <!-- ========== 页型 11 · 尾页：收在要拍板的事和下一步，不写"谢谢 / 欢迎交流" ========== -->
-<section class="slide" id="next">
+<section class="slide" id="next" data-sample>
   <header class="rv"><h2 class="t-title">还需要拍板两件事，其余已排期</h2></header>
   <div class="card rv" style="display:flex;flex-direction:column;gap:18px">
     <div class="inset" style="display:flex;align-items:center;gap:18px;padding:20px 26px">
@@ -603,6 +605,7 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
   }
   fit();
   window.addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);   // 字体换上来之后高度会变
   fontGuard();
 
   // 字体没加载时不许静默回落成系统字体。从 skill 目录直接打开模板、或 fonts/ 没跟 index.html 放在一起时，

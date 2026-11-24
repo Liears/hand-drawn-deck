@@ -104,9 +104,10 @@ const r = await page.evaluate(async (extra) => {
   }
   const fonts = [...new Set([...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family))];
   const pagenos = q('.pageno').map((e) => e.textContent.trim());
+  const ownText = (el) => [...el.childNodes].filter((nd) => nd.nodeType === 3).map((nd) => nd.textContent).join('').trim();
   const small = q('.slide *').filter((el) => {
     const fs = parseFloat(getComputedStyle(el).fontSize);
-    return el.children.length === 0 && (el.textContent || '').trim() && fs < 19;
+    return ownText(el) && fs < 20 && !el.closest('.codewin');   // 字号下限 20px；代码窗的 19px 除外
   }).map((el) => tag(el) + ' | ' + getComputedStyle(el).fontSize);
   // heights 是缩放后的视口像素（本脚本视口宽 1680，即 0.875×）；designHeights 是未缩放的设计稿像素
   const heights = slides.map((s) => Math.round(s.getBoundingClientRect().height));
@@ -143,21 +144,26 @@ const r = await page.evaluate(async (extra) => {
   // 中文与英文、数字之间留一个空格；正文句子不超过 60 字、一个分句不超过 40 字（只查正文，不查代码和图表）
   const CJK = /[\u3400-\u4dbf\u4e00-\u9fff]/;
   const LATIN = /[A-Za-z0-9]/;
-  const spacing = new Map(), longText = [];
-  const walk2 = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  for (let n; (n = walk2.nextNode());) {
-    const el = n.parentElement;
-    if (!el || el.closest('pre,code,svg,script,style')) continue;
-    const s = n.textContent, where = el.className || el.tagName;
+  const BLOCK = /^(block|flex|grid|list-item|table-cell)$/;
+  const spacing = new Map(), longText = new Set();
+  // 按"叶子块"取 innerText：跨 <a>、<b> 这类行内元素的相邻字符和整句才不会被漏掉
+  const blocks = q('.slide *').filter((el) => {
+    if (!BLOCK.test(getComputedStyle(el).display) || el.closest('pre,code,svg,script,style')) return false;
+    return ![...el.children].some((c) => BLOCK.test(getComputedStyle(c).display));
+  });
+  for (const el of blocks) {
+    const s = el.innerText || '';
+    if (!s.trim()) continue;
+    const where = el.className || el.tagName;
     for (let i = 1; i < s.length; i++) {
       const a = s[i - 1], b = s[i];
       if ((CJK.test(a) && LATIN.test(b)) || (LATIN.test(a) && CJK.test(b))) spacing.set(where + ' | ' + a + b, true);
     }
-    s.split(/[。！？!?]+/).forEach((sent) => {
+    s.split(/[。！？!?\n]+/).forEach((sent) => {
       const t2 = sent.trim();
-      if (t2.length > 60) longText.push('句 ' + t2.length + ' 字：' + t2.slice(0, 14) + '…');
-      t2.split(/[，、；：,;]+/).forEach((cl) => {
-        if (cl.trim().length > 40) longText.push('分句 ' + cl.trim().length + ' 字：' + cl.trim().slice(0, 14) + '…');
+      if (t2.length > 60) longText.add('句 ' + t2.length + ' 字：' + t2.slice(0, 14) + '…');
+      t2.split(/[，、；：,;\n]+/).forEach((cl) => {
+        if (cl.trim().length > 40) longText.add('分句 ' + cl.trim().length + ' 字：' + cl.trim().slice(0, 14) + '…');
       });
     });
   }
@@ -246,14 +252,16 @@ const r = await page.evaluate(async (extra) => {
     const h = s2.querySelector('.t-title') || s2.querySelector('h1,h2');
     return h ? h.textContent.trim() : '(无标题)';
   });
+  const titlePlaceholder = ['', '标题', 'title', 'Title'].includes(document.title.trim());
+  const sampleSlides = slides.map((s2, i) => (s2.hasAttribute('data-sample') ? i + 1 : null)).filter(Boolean);
   return {
     missing: [...miss.values()], checked, accepted,
     undefinedClasses, textOverlap: [...new Set(textOverlap)].slice(0, 6), internalWords: [...new Set(internalWords)].slice(0, 6),
-    layouts, layoutRun, cardGap: cardGap.slice(0, 6), titles,
+    layouts, layoutRun, cardGap: cardGap.slice(0, 6), titles, titlePlaceholder, sampleSlides,
     overflowN: overflow.length, overflow: overflow.slice(0, 8),
     fonts, fontErrors, slides: slides.length, pagenos, small: small.slice(0, 8), heights, designHeights,
     hiddenSlides, reducedMotion, placeholders, emptyLinks, staleRefs, dupIds, deadAnchors, strayColors,
-    cjkSpacing: [...spacing.keys()], longText: longText.slice(0, 8),
+    cjkSpacing: [...spacing.keys()], longText: [...longText].slice(0, 8),
     templateSample: !!document.querySelector('meta[name="deck-template"]'),
   };
 }, extra);
@@ -269,7 +277,7 @@ for (const w of [390, 1280, 2600]) {
 await page.setViewportSize({ width: 1680, height: 945 });
 
 // 页码连续性：N / M，M == 页数
-const pagenosOk = r.pagenos.length === r.slides && r.pagenos.every((t, i) => t === `${i + 1} / ${r.slides}`);
+const pagenosOk = r.slides > 0 && r.pagenos.length === r.slides && r.pagenos.every((t, i) => t === `${i + 1} / ${r.slides}`);
 const needFonts = ['Xiaolai', 'Excalifont', 'JetBrains Mono'];
 const fontsOk = needFonts.every((f) => r.fonts.includes(f)) && !r.fontErrors.length;
 const tall = r.heights.map((h, i) => ({ h, i: i + 1 })).filter((x) => x.h > 1400).map((x) => 'p' + x.i + ':' + x.h + 'px');
@@ -300,6 +308,8 @@ line(r.internalWords.length ? 'WARN' : 'PASS', 'internalWords', r.internalWords)
 line(r.layoutRun >= 3 ? 'WARN' : 'PASS', 'layoutRun', r.layoutRun);
 line(r.cardGap.length ? 'WARN' : 'PASS', 'cardGap', r.cardGap);
 line(r.templateSample ? 'WARN' : 'PASS', 'templateSample', r.templateSample);
+line(r.titlePlaceholder ? 'WARN' : 'PASS', 'titlePlaceholder', r.titlePlaceholder);
+line(r.sampleSlides.length ? 'WARN' : 'PASS', 'sampleSlides', r.sampleSlides);
 console.log(`[INFO] slides=${r.slides} glyphsChecked=${r.checked} heights=${r.heights.join(',')}${tall.length ? ' tall(>1400px)=' + tall.join(' ') : ''}`);
 console.log(`[INFO] designHeights=${r.designHeights.join(',')}（未缩放的设计稿像素；heights 是 1680 宽视口下按 0.875× 缩放后的值，与单页高度基线同一口径）`);
 console.log(`[INFO] layouts=${r.layouts.join(' > ')}`);

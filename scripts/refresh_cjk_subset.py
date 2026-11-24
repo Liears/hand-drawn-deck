@@ -16,6 +16,8 @@
 依赖：pip install fonttools brotli
 退出码：0 完成；缺源字体 / 缺依赖 / 子集化失败时非 0。
 """
+from __future__ import annotations
+
 import hashlib
 import re
 import subprocess

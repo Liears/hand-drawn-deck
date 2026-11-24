@@ -43,12 +43,20 @@ const handles = await page.$$('.slide');
 const wanted = pages === 'all'
   ? handles.map((_, i) => i + 1)
   : pages.split(',').map(Number);
+const bad = wanted.filter((n) => !Number.isInteger(n) || n < 1 || n > handles.length);
+if (bad.length) {
+  console.error(`页码无效：${bad.join('、')}（这份 deck 共 ${handles.length} 页，页码从 1 开始）`);
+  await browser.close();
+  process.exit(2);
+}
 
+let missing = 0;
 for (const n of wanted) {
   const el = handles[n - 1];
-  if (!el) { console.error(`no slide ${n}`); continue; }
+  if (!el) { console.error(`no slide ${n}`); missing += 1; continue; }
   const out = path.join(outDir, `deck-page-${n}.png`);
   await el.screenshot({ path: out });
   console.log('shot', out);
 }
 await browser.close();
+if (missing) process.exit(1);
