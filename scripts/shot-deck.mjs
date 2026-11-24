@@ -40,10 +40,15 @@ await page.waitForTimeout(1500);
 await page.evaluate(() => document.querySelectorAll('.slide').forEach((s) => s.classList.add('on')));
 await page.waitForTimeout(600);
 const handles = await page.$$('.slide');
+if (!handles.length) {
+  console.error('没有 .slide：这个页面不是 deck，或者选择器不对');
+  await browser.close();
+  process.exit(1);
+}
 const wanted = pages === 'all'
   ? handles.map((_, i) => i + 1)
-  : pages.split(',').map(Number);
-const bad = wanted.filter((n) => !Number.isInteger(n) || n < 1 || n > handles.length);
+  : pages.split(',').map((raw) => (/^\d+$/.test(raw.trim()) ? Number(raw) : raw.trim()));
+const bad = wanted.filter((n) => typeof n !== 'number' || n < 1 || n > handles.length);
 if (bad.length) {
   console.error(`页码无效：${bad.join('、')}（这份 deck 共 ${handles.length} 页，页码从 1 开始）`);
   await browser.close();

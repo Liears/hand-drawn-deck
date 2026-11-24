@@ -107,7 +107,7 @@ const r = await page.evaluate(async (extra) => {
   const ownText = (el) => [...el.childNodes].filter((nd) => nd.nodeType === 3).map((nd) => nd.textContent).join('').trim();
   const small = q('.slide *').filter((el) => {
     const fs = parseFloat(getComputedStyle(el).fontSize);
-    return ownText(el) && fs < 20 && !el.closest('.codewin');   // 字号下限 20px；代码窗的 19px 除外
+    return ownText(el) && fs < 20 && !(fs === 19 && el.closest('.codewin'));   // 字号下限 20px；只豁免代码窗的 19px
   }).map((el) => tag(el) + ' | ' + getComputedStyle(el).fontSize);
   // heights 是缩放后的视口像素（本脚本视口宽 1680，即 0.875×）；designHeights 是未缩放的设计稿像素
   const heights = slides.map((s) => Math.round(s.getBoundingClientRect().height));
@@ -148,8 +148,8 @@ const r = await page.evaluate(async (extra) => {
   const spacing = new Map(), longText = new Set();
   // 按"叶子块"取 innerText：跨 <a>、<b> 这类行内元素的相邻字符和整句才不会被漏掉
   const blocks = q('.slide *').filter((el) => {
-    if (!BLOCK.test(getComputedStyle(el).display) || el.closest('pre,code,svg,script,style')) return false;
-    return ![...el.children].some((c) => BLOCK.test(getComputedStyle(c).display));
+    if (el.closest('pre,code,svg,script,style') || !(el.innerText || '').trim()) return false;
+    return ![...el.querySelectorAll('*')].some((c) => BLOCK.test(getComputedStyle(c).display));
   });
   for (const el of blocks) {
     const s = el.innerText || '';
