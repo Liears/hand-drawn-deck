@@ -89,6 +89,7 @@ const r = await page.evaluate(async (extra) => {
   const tag = (el) => (el.className || el.tagName) + ' | ' + (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 18);
   const overflow = [];
   for (const el of q('.slide *')) {
+    if (!el.getClientRects().length) continue; // hidden / display:none 的切换面板不参与溢出测量
     const cs = getComputedStyle(el);
     // 文字伸进右侧内边距时 scrollWidth 不变，这类元素（代码窗的 pre 等）改用 Range 量文字的真实边界
     const inlineOnly = [...el.children].every((c) => getComputedStyle(c).display === 'inline');
@@ -104,10 +105,27 @@ const r = await page.evaluate(async (extra) => {
   }
   const fonts = [...new Set([...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family))];
   const pagenos = q('.pageno').map((e) => e.textContent.trim());
+  const brokenImages = q('.slide img').filter((img) => {
+    if (!img.complete || img.naturalWidth === 0 || img.naturalHeight === 0) return true;
+    if (img.getClientRects().length) {
+      const box = img.getBoundingClientRect();
+      if (box.width <= 0 || box.height <= 0) return true;
+    }
+    return false;
+  }).map((img) => (img.getAttribute('src') || '(no-src)') + ' | ' + (img.alt || ''));
   const ownText = (el) => [...el.childNodes].filter((nd) => nd.nodeType === 3).map((nd) => nd.textContent).join('').trim();
+  const stageEl = document.getElementById('stage');
+  const stageScale = stageEl ? stageEl.getBoundingClientRect().width / 1920 : 1;
   const small = q('.slide *').filter((el) => {
+    const svg = el.closest('svg');
     const fs = parseFloat(getComputedStyle(el).fontSize);
-    return ownText(el) && fs < 20 && !(fs === 19 && el.closest('.codewin'));   // 字号下限 20px；只豁免代码窗的 19px
+    if (!ownText(el)) return false;
+    if (svg) {
+      const ctm = typeof el.getScreenCTM === 'function' ? el.getScreenCTM() : null;
+      const scaleToDesign = ctm ? Math.hypot(ctm.a, ctm.b) / (stageScale || 1) : 1;
+      return fs * scaleToDesign < 20; // SVG 标注按真实设计稿像素严格执行 >= 20px 下限
+    }
+    return fs < 20 && !(fs === 19 && el.closest('.codewin'));   // 正文字号下限 20px；只豁免代码窗的 19px
   }).map((el) => tag(el) + ' | ' + getComputedStyle(el).fontSize);
   // heights 是缩放后的视口像素（本脚本视口宽 1680，即 0.875×）；designHeights 是未缩放的设计稿像素
   const heights = slides.map((s) => Math.round(s.getBoundingClientRect().height));
@@ -215,6 +233,9 @@ const r = await page.evaluate(async (extra) => {
   // 版式序列：按页面里出现的组件粗略判断，查"连续三页同一个版式"
   const layoutOf = (s2) => {
     if (s2.querySelector('.codewin')) return '代码窗';
+    if (s2.querySelector('.stepper')) return '演示';
+    if (s2.querySelector('.archsvg')) return '结构图';
+    if (s2.querySelector('.figframe')) return '原图';
     if (s2.querySelector('.chart-line')) return '趋势';
     if (s2.querySelector('.stack')) return '构成';
     if (s2.querySelector('.flow')) return '链路';
@@ -255,7 +276,7 @@ const r = await page.evaluate(async (extra) => {
   const titlePlaceholder = ['', '标题', 'title', 'Title'].includes(document.title.trim());
   const sampleSlides = slides.map((s2, i) => (s2.hasAttribute('data-sample') ? i + 1 : null)).filter(Boolean);
   return {
-    missing: [...miss.values()], checked, accepted,
+    missing: [...miss.values()], checked, accepted, brokenImages,
     undefinedClasses, textOverlap: [...new Set(textOverlap)].slice(0, 6), internalWords: [...new Set(internalWords)].slice(0, 6),
     layouts, layoutRun, cardGap: cardGap.slice(0, 6), titles, titlePlaceholder, sampleSlides,
     overflowN: overflow.length, overflow: overflow.slice(0, 8),
@@ -285,6 +306,7 @@ const tall = r.heights.map((h, i) => ({ h, i: i + 1 })).filter((x) => x.h > 1400
 console.log(JSON.stringify({ ...r, pagenosOk, errs }, null, 1));
 const line = (tag, name, val) => console.log(`[${tag}] ${name}=${JSON.stringify(val)}`);
 line(r.missing.length ? 'FAIL' : 'PASS', 'missing', r.missing.map((m) => `${m.ch}(${m.cp}) @${m.where}`));
+line(r.brokenImages.length ? 'FAIL' : 'PASS', 'brokenImages', r.brokenImages);
 line(r.overflowN ? 'FAIL' : 'PASS', 'overflowN', r.overflowN);
 line(r.small.length ? 'FAIL' : 'PASS', 'small', r.small);
 line(errs.length ? 'FAIL' : 'PASS', 'errs', errs);
@@ -315,7 +337,7 @@ console.log(`[INFO] designHeights=${r.designHeights.join(',')}（未缩放的设
 console.log(`[INFO] layouts=${r.layouts.join(' > ')}`);
 console.log(`[INFO] titles=${JSON.stringify(r.titles)}`);
 if (r.missing.length) console.log('       缺字修法：改文案后重跑 refresh_cjk_subset.py；源字体确实没有的字符换写法，或写进 <meta name="fallback-ok" content="…"> 表示已人工接受回落');
-const fail = r.missing.length || r.overflowN || r.small.length || errs.length || !pagenosOk || !fontsOk || r.hiddenSlides.length
+const fail = r.missing.length || r.brokenImages.length || r.overflowN || r.small.length || errs.length || !pagenosOk || !fontsOk || r.hiddenSlides.length
   || !r.reducedMotion || r.dupIds.length || r.deadAnchors.length || hScroll.length;
 console.log(fail ? '验收：FAIL' : '验收：PASS');
 await browser.close();
