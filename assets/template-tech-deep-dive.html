@@ -280,9 +280,13 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 
 <!-- ========== 阶段 1 + 2 · 目标、适用前提（Non-Goals）与核心问题 ========== -->
 <section class="slide" id="goal" data-sample>
-  <header class="rv" style="display:flex;align-items:center;gap:20px">
-    <h1 class="t-title">为达成「目标指标」并消除「核心结构矛盾」，我们提出「方案名」</h1>
-    <span class="badge warn" style="margin-left:auto">推演骨架示例</span>
+  <header class="rv">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
+      <span class="badge solid">1–2 / 9 · 目标与问题</span>
+      <span class="t-label">推演主线：目标·问题 → 事实×约束 → 方案取舍 → 实现归因 → 受控验证 → 差距 → 突破</span>
+      <span class="badge warn" style="margin-left:auto">推演骨架示例</span>
+    </div>
+    <h1 class="t-title">一、目标与核心问题：为达成「目标指标」，须解除「核心结构矛盾」</h1>
   </header>
   <div class="card rv">
     <div class="grid3">
@@ -309,7 +313,10 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 
 <!-- ========== 阶段 3 + 4 · 客观事实 × 关键约束 受力分析 ========== -->
 <section class="slide" id="tension" data-sample>
-  <header class="rv"><h2 class="t-title">三条不可违背的客观事实与三条硬约束，共同锁死了求解空间</h2></header>
+  <header class="rv">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px"><span class="badge solid">3–4 / 9 · 事实 × 约束</span></div>
+    <h2 class="t-title">二、客观事实 × 关键约束：三条规律与三条红线锁死求解空间</h2>
+  </header>
   <div class="grid2">
     <div class="subcard rv" style="display:flex;flex-direction:column;gap:14px">
       <div class="t-label">客观事实（世界原本如此，可顺势利用）</div>
@@ -347,7 +354,10 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 
 <!-- ========== 阶段 5 · 前人试错、备选方案淘汰对比与新代价承接 ========== -->
 <section class="slide" id="candidates" data-sample>
-  <header class="rv"><h2 class="t-title">前人方案均踩中约束红线，唯有「本方案」兼顾 O(1) 寻址与噪声抑制</h2></header>
+  <header class="rv">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px"><span class="badge solid">5 / 9 · 方案推导与取舍</span></div>
+    <h2 class="t-title">三、方案推导与取舍：前人均踩约束红线，「本方案」胜出但引入新代价</h2>
+  </header>
   <div class="card rv">
     <div class="dtable" data-cols="4">
       <div class="th"><div>候选路线</div></div><div class="th"><div>满足的约束</div></div><div class="th"><div>踩中的红线 / 淘汰原因</div></div><div class="th"><div>引入的新代价</div></div>
@@ -362,7 +372,10 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 
 <!-- ========== 阶段 6a · 具体实现与全局 SVG 结构图（每模块回扣第 2 页约束） ========== -->
 <section class="slide" id="arch" data-sample>
-  <header class="rv"><h2 class="t-title">方案的三大核心组件，每个都精准回扣一条前面确立的事实或约束</h2></header>
+  <header class="rv">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px"><span class="badge solid">6 / 9 · 具体实现 1/3</span></div>
+    <h2 class="t-title">四、具体实现（1/3）架构归因：三大核心组件精确回扣事实与约束</h2>
+  </header>
   <div class="stepper card rv" id="sample-arch-step">
     <div class="step-bar">
       <span class="t-label">点选模块看归因：</span>
@@ -416,7 +429,10 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 
 <!-- ========== 阶段 6b · 具体样例动画演练（用实例跑通链路） ========== -->
 <section class="slide" id="walkthrough" data-sample>
-  <header class="rv"><h2 class="t-title">实例动画演练：一条真实请求怎么逐步过关</h2></header>
+  <header class="rv">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px"><span class="badge solid">6 / 9 · 具体实现 2/3</span></div>
+    <h2 class="t-title">四、具体实现（2/3）动画演练：一条真实请求如何逐步过关</h2>
+  </header>
   <div class="stepper card rv" id="sample-ex">
     <div class="step-bar">
       <button type="button" class="step-btn accent is-active" data-step-trigger="e1">1. 规范化</button>
@@ -444,7 +460,10 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 
 <!-- ========== 阶段 6c · 核心代码与自身演化裁剪（说明为什么删/改） ========== -->
 <section class="slide" id="impl-code" data-sample>
-  <header class="rv"><h2 class="t-title">从原型走到生产：为守住时延预算，砍掉冗余算子并融合投影</h2></header>
+  <header class="rv">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px"><span class="badge solid">6 / 9 · 具体实现 3/3</span></div>
+    <h2 class="t-title">四、具体实现（3/3）演进裁剪：为守住时延预算砍掉冗余并融合投影</h2>
+  </header>
   <div class="grid2">
     <div class="codewin rv">
       <div class="dots"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></div>
@@ -468,7 +487,10 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 
 <!-- ========== 阶段 7 · 受控验证与代价核算（改善多少 + 剔除干扰 + 副作用） ========== -->
 <section class="slide" id="eval" data-sample>
-  <header class="rv"><h2 class="t-title">在控制等激活与等训练量后，核心目标提升 12.8 点，卸载损耗低于 3%</h2></header>
+  <header class="rv">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px"><span class="badge solid">7 / 9 · 受控验证与代价</span></div>
+    <h2 class="t-title">五、受控验证与代价：等激活提升 12.8 点，卸载损耗低于 3%</h2>
+  </header>
   <div class="subcard rv" style="display:grid;grid-template-columns:360px minmax(0,1fr);gap:18px 28px;align-items:center">
     <div class="t-label">核心目标检索评测（受控对照）</div>
     <div>
@@ -491,7 +513,10 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 
 <!-- ========== 阶段 8 · 目前距离目标还有多远（残余 Gap + 证据盲区） ========== -->
 <section class="slide" id="gaps" data-sample>
-  <header class="rv"><h2 class="t-title">对照第 1 页北极星目标，当前方案仍在泛化粒度与实证上存在三大缺口</h2></header>
+  <header class="rv">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px"><span class="badge solid">8 / 9 · 距离目标的差距</span></div>
+    <h2 class="t-title">六、距离目标的差距：对照北极星目标，泛化与实证仍有三大缺口</h2>
+  </header>
   <div class="grid3">
     <div class="subcard rv" style="display:flex;flex-direction:column">
       <div style="display:flex;align-items:center;gap:12px">
@@ -532,7 +557,10 @@ a:focus-visible, [tabindex]:focus-visible { outline:3px solid var(--accent); out
 
 <!-- ========== 阶段 9 · 下一步应该突破什么（一一对应第 8 步缺口） ========== -->
 <section class="slide" id="next" data-sample>
-  <header class="rv"><h2 class="t-title">围绕三大缺口，下一步分「近期工程落盘」与「中长期突破」两条线推进</h2></header>
+  <header class="rv">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px"><span class="badge solid">9 / 9 · 下一步突破</span></div>
+    <h2 class="t-title">七、下一步突破方向：围绕三大缺口，分近期工程与中长期推进</h2>
+  </header>
   <div class="card rv" style="display:flex;flex-direction:column;gap:18px">
     <div class="inset" style="display:flex;align-items:center;gap:18px;padding:20px 26px">
       <span class="badge solid">01</span>
