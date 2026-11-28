@@ -105,17 +105,25 @@ const r = await page.evaluate(async (extra) => {
   }
   const fonts = [...new Set([...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family))];
   const pagenos = q('.pageno').map((e) => e.textContent.trim());
-  const brokenImages = q('.slide img').filter((img) => !img.complete || img.naturalWidth === 0)
-    .map((img) => (img.getAttribute('src') || '(no-src)') + ' | ' + (img.alt || ''));
+  const brokenImages = q('.slide img').filter((img) => {
+    if (!img.complete || img.naturalWidth === 0 || img.naturalHeight === 0) return true;
+    if (img.getClientRects().length) {
+      const box = img.getBoundingClientRect();
+      if (box.width <= 0 || box.height <= 0) return true;
+    }
+    return false;
+  }).map((img) => (img.getAttribute('src') || '(no-src)') + ' | ' + (img.alt || ''));
   const ownText = (el) => [...el.childNodes].filter((nd) => nd.nodeType === 3).map((nd) => nd.textContent).join('').trim();
+  const stageEl = document.getElementById('stage');
+  const stageScale = stageEl ? stageEl.getBoundingClientRect().width / 1920 : 1;
   const small = q('.slide *').filter((el) => {
     const svg = el.closest('svg');
     const fs = parseFloat(getComputedStyle(el).fontSize);
     if (!ownText(el)) return false;
     if (svg) {
-      const vbW = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal.width : 0;
-      const scaleToDesign = vbW ? (svg.clientWidth || svg.getBoundingClientRect().width / 0.875) / vbW : 1;
-      return fs * scaleToDesign < 16; // SVG 标注在设计稿尺度下低于 16px 才算偏小（不误报 viewBox 坐标系标签）
+      const ctm = typeof el.getScreenCTM === 'function' ? el.getScreenCTM() : null;
+      const scaleToDesign = ctm ? Math.hypot(ctm.a, ctm.b) / (stageScale || 1) : 1;
+      return fs * scaleToDesign < 20; // SVG 标注按真实设计稿像素严格执行 >= 20px 下限
     }
     return fs < 20 && !(fs === 19 && el.closest('.codewin'));   // 正文字号下限 20px；只豁免代码窗的 19px
   }).map((el) => tag(el) + ' | ' + getComputedStyle(el).fontSize);
@@ -225,8 +233,8 @@ const r = await page.evaluate(async (extra) => {
   // 版式序列：按页面里出现的组件粗略判断，查"连续三页同一个版式"
   const layoutOf = (s2) => {
     if (s2.querySelector('.codewin')) return '代码窗';
-    if (s2.querySelector('.archsvg')) return '结构图';
     if (s2.querySelector('.stepper')) return '演示';
+    if (s2.querySelector('.archsvg')) return '结构图';
     if (s2.querySelector('.figframe')) return '原图';
     if (s2.querySelector('.chart-line')) return '趋势';
     if (s2.querySelector('.stack')) return '构成';
